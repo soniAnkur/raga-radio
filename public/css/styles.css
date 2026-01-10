@@ -980,18 +980,321 @@ body {
   }
 }
 
+/* ============================================
+   SEGMENTED TAB CONTROL
+   ============================================ */
+.modal-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 var(--space-2xl) var(--space-md);
+  padding: 4px;
+  background: var(--glass-white-subtle);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+}
+
+.modal-tab {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  font-family: var(--font-family);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 44px;
+}
+
+.modal-tab:hover {
+  color: var(--text-primary);
+}
+
+.modal-tab.active {
+  background: var(--glass-white);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px var(--glass-shadow);
+}
+
+/* Tab Content Panels */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+  animation: tabFadeIn 0.2s ease-out;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   INSTRUMENT BADGE SELECTOR
+   ============================================ */
+.instrument-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-height: 280px;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  background: var(--glass-white-subtle);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  -webkit-overflow-scrolling: touch;
+}
+
+.instrument-category {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.instrument-category-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: var(--space-xs) 0;
+}
+
+.instrument-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.instrument-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  min-height: 44px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  font-family: var(--font-family);
+  color: var(--text-secondary);
+  background: var(--glass-white-light);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.instrument-badge:hover {
+  background: var(--glass-white);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.instrument-badge:active {
+  transform: scale(0.95);
+}
+
+.instrument-badge.selected {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.instrument-badge.selected:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+
+/* ============================================
+   ARTIFACT DOWNLOAD BUTTONS
+   ============================================ */
+.artifact-buttons {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg) 0;
+  margin-top: var(--space-md);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.artifact-buttons.hidden {
+  display: none;
+}
+
+.artifact-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  min-width: 72px;
+  min-height: 72px;
+  text-decoration: none;
+  color: var(--text-secondary);
+  background: var(--glass-white-light);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.artifact-btn:hover {
+  background: var(--glass-white);
+  color: var(--accent);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--glass-shadow);
+}
+
+.artifact-btn:active {
+  transform: scale(0.95);
+}
+
+.artifact-icon {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+}
+
+.artifact-btn span {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.artifact-btn.disabled {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   IMPROVED GENERATION STATUS
+   ============================================ */
+.generation-status {
+  padding: var(--space-lg) var(--space-2xl);
+  background: linear-gradient(
+    180deg,
+    var(--glass-white-subtle) 0%,
+    rgba(59, 130, 246, 0.05) 100%
+  );
+  border-top: 1px solid var(--glass-border);
+}
+
+.generation-status.hidden {
+  display: none;
+}
+
+.generation-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.step-indicator {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  min-width: 48px;
+}
+
+.step-number {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.step-total {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill-animated {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease-out;
+  position: relative;
+}
+
+.progress-fill-animated::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: progressShimmer 1.5s infinite;
+}
+
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.status-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-phase {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .status-text {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
+}
+
+/* Mobile optimizations for generation status */
+@media (max-width: 480px) {
+  .generation-status {
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  .step-number {
+    font-size: var(--font-size-xl);
+  }
 }
 
 /* ============================================
    GENERATION OPTIONS
    ============================================ */
 .generation-options {
-  margin-top: var(--space-lg);
-  padding-top: var(--space-lg);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  /* No top margin/border needed - tabs handle separation */
 }
 
 .options-title {

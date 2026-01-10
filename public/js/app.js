@@ -105,11 +105,28 @@ const elements = {
   genreSelect: document.getElementById('genre-select'),
   genreHint: document.getElementById('genre-hint'),
   instrumentSelect: document.getElementById('instrument-select'),
+  instrumentSelector: document.getElementById('instrument-selector'),
   durationSelect: document.getElementById('duration-select'),
   instrumentGroup: document.getElementById('instrument-group'),
   durationGroup: document.getElementById('duration-group'),
   modeHint: document.getElementById('mode-hint'),
   addBackgroundMusic: document.getElementById('add-background-music'),
+
+  // Modal Tabs
+  tabDetails: document.getElementById('tab-details'),
+  tabGenerate: document.getElementById('tab-generate'),
+
+  // Artifact Buttons
+  artifactButtons: document.getElementById('artifact-buttons'),
+  artifactMidi: document.getElementById('artifact-midi'),
+  artifactWav: document.getElementById('artifact-wav'),
+  artifactMp3: document.getElementById('artifact-mp3'),
+
+  // Generation Status (improved)
+  stepNumber: document.getElementById('step-number'),
+  stepTotal: document.getElementById('step-total'),
+  generationProgressFill: document.getElementById('generation-progress-fill'),
+  statusPhase: document.getElementById('status-phase'),
 
   // Audio
   audioPlayer: document.getElementById('audio-player'),
@@ -120,6 +137,67 @@ const elements = {
 // ============================================
 const musicNoteIcon = '<svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>';
 const shareIcon = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>';
+
+// ============================================
+// Modal Tab Switching
+// ============================================
+function switchModalTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.modal-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+
+  // Update content visibility
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.toggle('active', content.id === `tab-${tabName}`);
+  });
+}
+
+// ============================================
+// Generation Status Step Definitions
+// ============================================
+const GENERATION_STEPS = {
+  authentic: [
+    { step: 1, total: 4, phase: 'Generating Melody', text: 'Creating authentic raga melody with AI...' },
+    { step: 2, total: 4, phase: 'Building Audio', text: 'Converting melody to audio...' },
+    { step: 3, total: 4, phase: 'AI Processing', text: 'Suno AI is transforming the melody...' },
+    { step: 4, total: 4, phase: 'Finalizing', text: 'Downloading and saving your track...' },
+  ],
+  standard: [
+    { step: 1, total: 3, phase: 'Generating', text: 'Starting AI music generation...' },
+    { step: 2, total: 3, phase: 'Processing', text: 'Creating musical variations...' },
+    { step: 3, total: 3, phase: 'Finalizing', text: 'Downloading your track...' },
+  ],
+  withBackground: [
+    { step: 1, total: 5, phase: 'Generating Melody', text: 'Creating authentic raga melody...' },
+    { step: 2, total: 5, phase: 'Building Audio', text: 'Converting to audio format...' },
+    { step: 3, total: 5, phase: 'AI Processing', text: 'Suno AI processing melody...' },
+    { step: 4, total: 5, phase: 'Adding Background', text: 'Adding atmospheric background music...' },
+    { step: 5, total: 5, phase: 'Finalizing', text: 'Downloading final track...' },
+  ]
+};
+
+/**
+ * Update the generation status UI
+ * @param {number} stepIndex - Current step index (0-based)
+ * @param {string} mode - Generation mode ('authentic', 'standard', 'withBackground')
+ * @param {string} customText - Optional custom status text
+ */
+function updateGenerationStatus(stepIndex, mode = 'authentic', customText = null) {
+  const steps = GENERATION_STEPS[mode] || GENERATION_STEPS.standard;
+  const currentStep = steps[Math.min(stepIndex, steps.length - 1)];
+
+  if (elements.stepNumber) elements.stepNumber.textContent = currentStep.step;
+  if (elements.stepTotal) elements.stepTotal.textContent = `/${currentStep.total}`;
+
+  if (elements.generationProgressFill) {
+    const progress = (currentStep.step / currentStep.total) * 100;
+    elements.generationProgressFill.style.width = `${progress}%`;
+  }
+
+  if (elements.statusPhase) elements.statusPhase.textContent = currentStep.phase;
+  if (elements.statusText) elements.statusText.textContent = customText || currentStep.text;
+}
 
 // ============================================
 // Toast Notification
@@ -423,7 +501,7 @@ async function fetchGenreInstruments(genreId) {
     const response = await fetch(`/api/genres/${genreId}/instruments`);
     const data = await response.json();
     if (data.success) {
-      populateInstrumentDropdown(data.instruments, data.defaultInstruments);
+      renderInstrumentBadges(data.instruments, data.defaultInstruments);
     }
   } catch (error) {
     console.error('Failed to fetch genre instruments:', error);
@@ -431,6 +509,62 @@ async function fetchGenreInstruments(genreId) {
   }
 }
 
+/**
+ * Render instrument badges grouped by category
+ * @param {Array} instruments - Array of instrument objects
+ * @param {Array} defaultInstruments - Array of instrument IDs to pre-select
+ */
+function renderInstrumentBadges(instruments, defaultInstruments = []) {
+  const container = elements.instrumentSelector;
+  if (!container) return;
+
+  // Group instruments by category
+  const groups = {};
+  instruments.forEach(inst => {
+    const category = formatCategory(inst.category);
+    if (!groups[category]) groups[category] = [];
+    groups[category].push(inst);
+  });
+
+  // Render categories with badges
+  container.innerHTML = Object.entries(groups).map(([category, items]) => `
+    <div class="instrument-category">
+      <span class="instrument-category-label">${category}</span>
+      <div class="instrument-badges">
+        ${items.map(inst => `
+          <button
+            type="button"
+            class="instrument-badge ${defaultInstruments.includes(inst.id) ? 'selected' : ''}"
+            data-id="${inst.id}"
+            title="${inst.sunoDesc || inst.name}"
+          >
+            ${inst.name}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // Add click handlers for toggle behavior
+  container.querySelectorAll('.instrument-badge').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.preventDefault();
+      badge.classList.toggle('selected');
+    });
+  });
+}
+
+/**
+ * Get array of selected instrument IDs from badge selector
+ */
+function getSelectedInstruments() {
+  const badges = document.querySelectorAll('.instrument-badge.selected');
+  const selected = Array.from(badges).map(b => b.dataset.id);
+  // Fallback to sitar if nothing selected
+  return selected.length > 0 ? selected : ['sitar'];
+}
+
+// Keep for backward compatibility (populates the old select element if it exists)
 function populateInstrumentDropdown(instruments, defaultInstruments = []) {
   const select = elements.instrumentSelect;
   if (!select) return;
@@ -630,8 +764,10 @@ function showTrackDetails(index) {
     day: 'numeric'
   });
 
-  // Add dynamic detail rows before the description
-  const detailsContainer = elements.modalDescription.parentNode;
+  // Add dynamic detail rows before the artifact buttons
+  const artifactButtons = elements.artifactButtons;
+  const detailsContainer = artifactButtons?.parentNode || elements.modalDescription.parentNode;
+  const insertBeforeEl = artifactButtons || elements.modalDescription;
 
   // Instruments row
   if (instruments.length > 0) {
@@ -641,7 +777,7 @@ function showTrackDetails(index) {
       <span class="detail-label">Instruments</span>
       <span class="detail-value">${instruments.join(', ')}</span>
     `;
-    detailsContainer.insertBefore(instrumentsRow, elements.modalDescription);
+    detailsContainer.insertBefore(instrumentsRow, insertBeforeEl);
   }
 
   // Created date row
@@ -651,32 +787,50 @@ function showTrackDetails(index) {
     <span class="detail-label">Created</span>
     <span class="detail-value">${dateStr}</span>
   `;
-  detailsContainer.insertBefore(dateRow, elements.modalDescription);
+  detailsContainer.insertBefore(dateRow, insertBeforeEl);
 
-  // MIDI file row
-  if (track.midiFileUrl) {
-    const midiRow = document.createElement('div');
-    midiRow.className = 'detail-row modal-dynamic-row';
-    midiRow.innerHTML = `
-      <span class="detail-label">MIDI</span>
-      <a class="detail-value detail-link" href="${track.midiFileUrl}" target="_blank">
-        Download exact notes
-      </a>
-    `;
-    detailsContainer.insertBefore(midiRow, elements.modalDescription);
-  }
+  // Configure artifact buttons
+  if (elements.artifactButtons) {
+    const hasAnyArtifact = track.midiFileUrl || track.referenceAudioUrl || track.url;
 
-  // Reference audio row
-  if (track.referenceAudioUrl) {
-    const refRow = document.createElement('div');
-    refRow.className = 'detail-row modal-dynamic-row';
-    refRow.innerHTML = `
-      <span class="detail-label">Reference</span>
-      <a class="detail-value detail-link" href="${track.referenceAudioUrl}" target="_blank">
-        Download WAV melody
-      </a>
-    `;
-    detailsContainer.insertBefore(refRow, elements.modalDescription);
+    if (hasAnyArtifact) {
+      elements.artifactButtons.classList.remove('hidden');
+
+      // MIDI button
+      if (elements.artifactMidi) {
+        if (track.midiFileUrl) {
+          elements.artifactMidi.href = track.midiFileUrl;
+          elements.artifactMidi.classList.remove('disabled');
+        } else {
+          elements.artifactMidi.removeAttribute('href');
+          elements.artifactMidi.classList.add('disabled');
+        }
+      }
+
+      // WAV button (reference audio)
+      if (elements.artifactWav) {
+        if (track.referenceAudioUrl) {
+          elements.artifactWav.href = track.referenceAudioUrl;
+          elements.artifactWav.classList.remove('disabled');
+        } else {
+          elements.artifactWav.removeAttribute('href');
+          elements.artifactWav.classList.add('disabled');
+        }
+      }
+
+      // MP3 button (main track URL)
+      if (elements.artifactMp3) {
+        if (track.url) {
+          elements.artifactMp3.href = track.url;
+          elements.artifactMp3.classList.remove('disabled');
+        } else {
+          elements.artifactMp3.removeAttribute('href');
+          elements.artifactMp3.classList.add('disabled');
+        }
+      }
+    } else {
+      elements.artifactButtons.classList.add('hidden');
+    }
   }
 
   elements.generateBtn.classList.add('hidden');
@@ -689,6 +843,9 @@ function showTrackDetails(index) {
     modalShareBtn.classList.remove('hidden');
     modalShareBtn.onclick = () => shareTrack(track);
   }
+
+  // Switch to Details tab for library tracks
+  switchModalTab('details');
 
   elements.modal.classList.remove('hidden');
 }
@@ -755,15 +912,19 @@ async function generateRaga(ragaId) {
   const mode = elements.modeSelect?.value || 'standard';
   const genre = elements.genreSelect?.value || state.currentGenre || 'indianClassical';
 
-  const instrumentSelect = elements.instrumentSelect;
-  const instruments = instrumentSelect
-    ? Array.from(instrumentSelect.selectedOptions).map(opt => opt.value)
-    : ['sitar'];
+  // Use badge selector for instruments
+  const instruments = getSelectedInstruments();
 
   const duration = parseInt(elements.durationSelect?.value || '60');
   const addBackgroundMusic = elements.addBackgroundMusic?.checked ?? true;
 
-  console.log('Generation options:', { mode, genre, instruments, duration });
+  // Determine status mode for progress updates
+  let statusMode = 'standard';
+  if (mode === 'authentic') {
+    statusMode = addBackgroundMusic ? 'withBackground' : 'authentic';
+  }
+
+  console.log('Generation options:', { mode, genre, instruments, duration, statusMode });
 
   let referenceAudioUrl = null;
   let midiFileUrl = null;
@@ -772,14 +933,15 @@ async function generateRaga(ragaId) {
   try {
     let endpoint, requestBody;
 
+    // Initial status
+    updateGenerationStatus(0, statusMode);
+
     if (mode === 'authentic') {
       endpoint = `/api/generate/${ragaId}/authentic`;
       requestBody = { instruments, duration, genre, useAIPrompt: true };
-      elements.statusText.textContent = 'Step 1/3: Generating alap melody...';
     } else {
       endpoint = `/api/generate/${ragaId}`;
       requestBody = { instruments };
-      elements.statusText.textContent = 'Step 1/2: Starting generation...';
     }
 
     const response = await fetch(endpoint, {
@@ -800,12 +962,11 @@ async function generateRaga(ragaId) {
       if (data.midiFile) midiFileUrl = data.midiFile;
     }
 
-    if (mode === 'authentic' && data.melody) {
-      elements.statusText.textContent = `Step 2/3: ${data.melody.noteCount} notes. Suno processing with ${instruments.length} instrument(s)...`;
+    // Update to step 2 - audio building / processing
+    if (mode === 'authentic') {
+      updateGenerationStatus(1, statusMode, data.melody ? `${data.melody.noteCount} notes generated` : null);
     } else {
-      elements.statusText.textContent = addBackgroundMusic
-        ? 'Step 1/2: Generating base track with all instruments (2-4 min)...'
-        : 'Generating music with all instruments (2-4 min)...';
+      updateGenerationStatus(1, statusMode);
     }
 
     let attempts = 0;
@@ -827,16 +988,13 @@ async function generateRaga(ragaId) {
       console.log(`Poll ${attempts}: ${status}`);
 
       if (status === 'PENDING') {
-        const stepPrefix = addBackgroundMusic ? 'Step 1/2: ' : '';
-        elements.statusText.textContent = mode === 'authentic'
-          ? `${stepPrefix}Suno processing with ${instruments.length} instruments... (${attempts * 5}s)`
-          : `${stepPrefix}Generating with ${instruments.length} instruments... (${attempts * 5}s)`;
+        updateGenerationStatus(2, statusMode, `Processing... (${attempts * 5}s)`);
       } else if (status === 'TEXT_SUCCESS') {
-        elements.statusText.textContent = 'Processing audio with all instruments...';
+        updateGenerationStatus(2, statusMode, 'Processing audio...');
       } else if (status === 'FIRST_SUCCESS') {
-        elements.statusText.textContent = 'First track ready, generating variations...';
+        updateGenerationStatus(2, statusMode, 'Almost there...');
       } else if (status === 'SUCCESS' || status === 'complete') {
-        elements.statusText.textContent = 'Downloading base track...';
+        updateGenerationStatus(3, statusMode, 'Downloading track...');
         break;
       } else if (status === 'FAILED' || status === 'error') {
         throw new Error(statusData.errorMessage || 'Generation failed');
@@ -868,7 +1026,7 @@ async function generateRaga(ragaId) {
       const baseTrack = downloadData.tracks[0];
       generatedTrackUrl = baseTrack.url;
 
-      elements.statusText.textContent = 'Step 2/2: Adding deep background music...';
+      updateGenerationStatus(3, statusMode, 'Adding background music...');
 
       const remixResponse = await fetch(`/api/remix/${ragaId}`, {
         method: 'POST',
@@ -885,7 +1043,7 @@ async function generateRaga(ragaId) {
 
       if (!remixData.success) {
         console.warn('Remix failed, using base track:', remixData.error);
-        elements.statusText.textContent = 'Background music failed, using base track...';
+        updateGenerationStatus(4, statusMode, 'Background music failed, using base track...');
       } else {
         const remixTaskId = remixData.taskId;
         let remixAttempts = 0;
@@ -907,9 +1065,9 @@ async function generateRaga(ragaId) {
           console.log(`Remix poll ${remixAttempts}: ${remixStatus}`);
 
           if (remixStatus === 'PENDING') {
-            elements.statusText.textContent = `Step 2/2: Adding background music... (${remixAttempts * 5}s)`;
+            updateGenerationStatus(3, statusMode, `Adding background music... (${remixAttempts * 5}s)`);
           } else if (remixStatus === 'SUCCESS' || remixStatus === 'complete') {
-            elements.statusText.textContent = 'Downloading remixed track...';
+            updateGenerationStatus(4, statusMode, 'Downloading final track...');
 
             const remixDownloadResponse = await fetch(`/api/remix/download/${remixTaskId}`, {
               method: 'POST',
@@ -932,7 +1090,7 @@ async function generateRaga(ragaId) {
               state.currentRaga.midiFileUrl = midiFileUrl;
               state.currentRaga.instruments = instruments;
               elements.playBtn.classList.remove('hidden');
-              elements.statusText.textContent = 'Track with background music ready!';
+              updateGenerationStatus(4, statusMode, 'Track with background music ready!');
 
               fetchLibraryTracks();
               playTrack(state.currentRaga);
@@ -945,7 +1103,7 @@ async function generateRaga(ragaId) {
           }
         }
 
-        elements.statusText.textContent = 'Using base track (remix still processing)...';
+        updateGenerationStatus(4, statusMode, 'Using base track...');
       }
     }
 
@@ -956,16 +1114,17 @@ async function generateRaga(ragaId) {
       state.currentRaga.midiFileUrl = track.midiFileUrl;
       state.currentRaga.instruments = track.instruments;
       elements.playBtn.classList.remove('hidden');
-      elements.statusText.textContent = mode === 'authentic'
-        ? 'Authentic track ready!'
-        : 'Track ready!';
+      const finalStepIndex = GENERATION_STEPS[statusMode].length - 1;
+      updateGenerationStatus(finalStepIndex, statusMode, 'Track ready!');
 
       fetchLibraryTracks();
       playTrack(state.currentRaga);
     }
   } catch (error) {
     console.error('Generation failed:', error);
-    elements.statusText.textContent = `Error: ${error.message}`;
+    if (elements.statusPhase) elements.statusPhase.textContent = 'Error';
+    if (elements.statusText) elements.statusText.textContent = error.message;
+    if (elements.generationProgressFill) elements.generationProgressFill.style.width = '0%';
   } finally {
     state.generatingRagas.delete(ragaId);
     updateGenerateButton(false);
@@ -1089,9 +1248,17 @@ async function openModal(raga) {
     modalShareBtn.classList.add('hidden');
   }
 
+  // Hide artifact buttons for new ragas (not from library)
+  if (elements.artifactButtons) {
+    elements.artifactButtons.classList.add('hidden');
+  }
+
   if (raga.audioUrl) {
     elements.playBtn.classList.remove('hidden');
   }
+
+  // Switch to Generate tab for new ragas
+  switchModalTab('generate');
 
   elements.modal.classList.remove('hidden');
   await suggestGenreForRaga(raga.id);
@@ -1261,6 +1428,13 @@ function initEventListeners() {
   // Modal
   elements.modalClose.addEventListener('click', closeModal);
   document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+
+  // Modal Tab Switching
+  document.querySelectorAll('.modal-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      switchModalTab(tab.dataset.tab);
+    });
+  });
 
   // Copy Modal (share fallback)
   const copyModalClose = document.getElementById('copy-modal-close');
