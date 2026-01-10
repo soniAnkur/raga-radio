@@ -7,7 +7,7 @@ import config from '../config.js';
 import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { createLogger } from '../utils/logger.js';
-import { uploadBufferToR2, isR2Configured } from './cloudflare-r2.js';
+import { uploadBufferToR2, isR2Configured, getJsonFromR2, putJsonToR2 } from './cloudflare-r2.js';
 
 const log = createLogger('SunoAPI');
 
@@ -264,41 +264,65 @@ export async function downloadTracks(record, ragaName, options = {}) {
   return processedTracks;
 }
 
+// R2 key for metadata storage
+const METADATA_R2_KEY = 'raga-radio/tracks-metadata.json';
+
+// In-memory cache for metadata
+let metadataCache = null;
+
 /**
- * Save track metadata to a JSON file
+ * Save track metadata to R2
  * @param {Array<object>} newTracks - New tracks to save
  */
 async function saveTrackMetadata(newTracks) {
-  const metadataPath = join(config.output.dir, 'tracks-metadata.json');
-
   try {
-    let existingTracks = [];
-    try {
-      const data = await readFile(metadataPath, 'utf-8');
-      existingTracks = JSON.parse(data);
-    } catch {
-      // File doesn't exist yet, start fresh
-    }
+    // Load existing tracks from R2
+    let existingTracks = await loadTrackMetadata();
 
-    const allTracks = [...existingTracks, ...newTracks];
-    await writeFile(metadataPath, JSON.stringify(allTracks, null, 2));
-    log.debug(`Track metadata saved`, { total: allTracks.length });
+    // Merge new tracks (avoid duplicates by sunoId)
+    const existingIds = new Set(existingTracks.map(t => t.sunoId).filter(Boolean));
+    const uniqueNewTracks = newTracks.filter(t => !t.sunoId || !existingIds.has(t.sunoId));
+
+    const allTracks = [...existingTracks, ...uniqueNewTracks];
+
+    // Save to R2
+    await putJsonToR2(METADATA_R2_KEY, allTracks);
+
+    // Update cache
+    metadataCache = allTracks;
+
+    log.info(`Track metadata saved to R2`, { total: allTracks.length, new: uniqueNewTracks.length });
   } catch (error) {
-    log.error('Failed to save track metadata', { error: error.message });
+    log.error('Failed to save track metadata to R2', { error: error.message });
+    throw error;
   }
 }
 
 /**
- * Load all track metadata
+ * Load all track metadata from R2
  * @returns {Promise<Array<object>>} Array of track info objects
  */
 export async function loadTrackMetadata() {
-  const metadataPath = join(config.output.dir, 'tracks-metadata.json');
+  // Return cached data if available
+  if (metadataCache !== null) {
+    log.debug(`Returning cached metadata (${metadataCache.length} tracks)`);
+    return metadataCache;
+  }
 
   try {
-    const data = await readFile(metadataPath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
+    const data = await getJsonFromR2(METADATA_R2_KEY);
+
+    if (data) {
+      metadataCache = data;
+      log.info(`Loaded ${data.length} tracks from R2`);
+      return data;
+    }
+
+    // No metadata file in R2 yet
+    log.debug('No metadata file in R2, returning empty array');
+    return [];
+  } catch (error) {
+    log.error('Failed to load track metadata from R2', { error: error.message });
     return [];
   }
 }

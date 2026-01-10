@@ -3,7 +3,7 @@
  * Uploads audio files to R2 and returns public URLs for Suno API
  */
 
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { readFile } from 'fs/promises';
 import { createLogger } from '../utils/logger.js';
 
@@ -145,4 +145,72 @@ export function isR2Configured() {
   ];
 
   return required.every(key => !!process.env[key]);
+}
+
+/**
+ * Get JSON data from Cloudflare R2
+ * @param {string} key - Object key (e.g., 'raga-radio/tracks-metadata.json')
+ * @returns {Promise<object|null>} Parsed JSON or null if not found
+ */
+export async function getJsonFromR2(key) {
+  log.debug(`Downloading from R2: ${key}`);
+
+  try {
+    const { bucketName } = getR2Config();
+    const r2Client = createR2Client();
+
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+
+    const response = await r2Client.send(command);
+    const bodyContents = await response.Body.transformToString();
+    const data = JSON.parse(bodyContents);
+
+    log.debug(`Downloaded ${key} (${Array.isArray(data) ? data.length + ' items' : 'object'})`);
+    return data;
+
+  } catch (error) {
+    if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      log.debug(`Object not found in R2: ${key}`);
+      return null;
+    }
+    log.error('R2 download failed', { error: error.message, key });
+    throw error;
+  }
+}
+
+/**
+ * Save JSON data to Cloudflare R2
+ * @param {string} key - Object key
+ * @param {object} data - Data to save as JSON
+ * @returns {Promise<string>} Public URL of uploaded file
+ */
+export async function putJsonToR2(key, data) {
+  log.debug(`Uploading JSON to R2: ${key}`);
+
+  try {
+    const { bucketName, publicUrl } = getR2Config();
+    const r2Client = createR2Client();
+    const content = JSON.stringify(data, null, 2);
+
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: content,
+      ContentType: 'application/json',
+      CacheControl: 'no-cache, no-store, must-revalidate',
+    });
+
+    await r2Client.send(command);
+
+    const fileUrl = `${publicUrl}/${key}`;
+    log.debug(`Uploaded to R2: ${fileUrl}`);
+    return fileUrl;
+
+  } catch (error) {
+    log.error('R2 JSON upload failed', { error: error.message, key });
+    throw error;
+  }
 }

@@ -7,7 +7,6 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { config } from 'dotenv';
-import { readdirSync, statSync } from 'fs';
 
 // Import modules
 import { getAllRagas, getRaga } from './data/ragas.js';
@@ -610,11 +609,11 @@ app.post('/api/remix/download/:taskId', async (req, res) => {
 
 /**
  * Get all generated tracks with raga details
- * Combines metadata from tracks-metadata.json with raga info
+ * Loads metadata from R2 and enhances with raga info
  */
 app.get('/api/tracks', async (req, res) => {
   try {
-    // Load tracks from metadata file (tracks with full info including R2 URLs)
+    // Load tracks from R2 metadata
     const metadataTracks = await loadTrackMetadata();
 
     // Enhance tracks with raga info
@@ -650,66 +649,11 @@ app.get('/api/tracks', async (req, res) => {
       };
     }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Newest first
 
-    // Also include legacy local files (without p2 suffix) for backwards compatibility
-    const outputDir = join(__dirname, '..', 'output');
-    try {
-      const localFiles = readdirSync(outputDir)
-        .filter(f => f.endsWith('.mp3') && !f.includes('_p2_')) // Only old files without p2
-        .map(filename => {
-          const filepath = join(outputDir, filename);
-          const stats = statSync(filepath);
-
-          // Extract raga name from filename
-          const match = filename.match(/^raga_(.+?)_\d+\.mp3$/);
-          const ragaKey = match ? match[1].replace(/_/g, '') : null;
-
-          let ragaInfo = null;
-          if (ragaKey) {
-            for (const [key, raga] of Object.entries(allRagas)) {
-              if (key.toLowerCase() === ragaKey.toLowerCase() ||
-                  raga.name.toLowerCase().replace(/\s+/g, '') === ragaKey.toLowerCase()) {
-                ragaInfo = {
-                  id: key,
-                  name: raga.name,
-                  thaat: raga.thaat,
-                  time: raga.time,
-                  mood: raga.mood,
-                  westernMode: raga.westernMode,
-                  scaleIndian: raga.scaleIndian,
-                  westernNotes: getScaleNotes(raga.scaleIndian),
-                  description: raga.description || null
-                };
-                break;
-              }
-            }
-          }
-
-          return {
-            filename,
-            url: `/output/${filename}`,
-            ragaName: ragaKey,
-            createdAt: stats.birthtime.toISOString(),
-            raga: ragaInfo,
-            referenceAudioUrl: null, // Legacy files don't have reference audio
-            instrument: null,
-            isLegacy: true,
-          };
-        });
-
-      // Combine and sort by date
-      const allTracks = [...enhancedTracks, ...localFiles]
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-      log.info(`Fetched ${allTracks.length} tracks (${enhancedTracks.length} new, ${localFiles.length} legacy)`);
-      res.json({ success: true, tracks: allTracks });
-    } catch {
-      // No local files, just return metadata tracks
-      log.info(`Fetched ${enhancedTracks.length} tracks from metadata`);
-      res.json({ success: true, tracks: enhancedTracks });
-    }
+    log.info(`Fetched ${enhancedTracks.length} tracks from R2`);
+    res.json({ success: true, tracks: enhancedTracks });
 
   } catch (error) {
-    log.error('Failed to read tracks', { error: error.message });
+    log.error('Failed to read tracks from R2', { error: error.message });
     res.json({ success: true, tracks: [] });
   }
 });
