@@ -1,0 +1,37 @@
+{
+  "name": "raga-radio",
+  "version": "1.0.0",
+  "description": "Generate instrumental tracks for Indian Classical Ragas using Suno API",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "dev:watch": "node --watch src/server.js",
+    "generate": "node src/index.js",
+    "preview": "node src/index.js --preview",
+    "logs": "tail -f logs/raga-radio-$(date +%Y-%m-%d).log",
+    "logs:clear": "rm -rf logs/*.log"
+  },
+  "keywords": [
+    "raga",
+    "indian-classical-music",
+    "suno",
+    "music-generation",
+    "hindustani"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.962.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "midi-writer-js": "^3.1.1",
+    "openai": "^6.15.0",
+    "uuid": "^13.0.0",
+    "wav": "^1.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

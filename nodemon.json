@@ -1,0 +1,18 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "ignore": ["src/**/*.test.js", "node_modules"],
+  "delay": 500,
+  "env": {
+    "NODE_ENV": "development",
+    "LOG_LEVEL": "DEBUG"
+  },
+  "execMap": {
+    "js": "node"
+  },
+  "events": {
+    "restart": "echo '\\n\\x1b[33m[nodemon] Restarting due to changes...\\x1b[0m\\n'",
+    "start": "echo '\\n\\x1b[32m[nodemon] Server started in development mode\\x1b[0m\\n'"
+  },
+  "colours": true
+}

@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raga Radio - End-to-End Flow Documentation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #f39c12, #e74c3c, #9b59b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+
+    .phase {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .phase-number {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: white;
+    }
+
+    .phase-1 .phase-number { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .phase-2 .phase-number { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .phase-3 .phase-number { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .phase-4 .phase-number { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    .phase-5 .phase-number { background: linear-gradient(135deg, #fa709a, #fee140); }
+
+    .phase-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .phase-subtitle {
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    .flow-box {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+
+    .flow-box h3 {
+      color: #f39c12;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+
+    .code-block {
+      background: #0d1117;
+      border-radius: 8px;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      margin: 10px 0;
+      border: 1px solid #30363d;
+    }
+
+    .code-block .comment {
+      color: #8b949e;
+    }
+
+    .code-block .key {
+      color: #7ee787;
+    }
+
+    .code-block .string {
+      color: #a5d6ff;
+    }
+
+    .code-block .number {
+      color: #79c0ff;
+    }
+
+    .arrow-down {
+      text-align: center;
+      font-size: 2rem;
+      color: #f39c12;
+      margin: 20px 0;
+    }
+
+    .diagram {
+      background: linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+      border-radius: 12px;
+      padding: 30px;
+      margin: 20px 0;
+    }
+
+    .diagram-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin: 15px 0;
+      flex-wrap: wrap;
+    }
+
+    .diagram-box {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 15px 25px;
+      text-align: center;
+      min-width: 150px;
+      border: 2px solid transparent;
+    }
+
+    .diagram-box.input { border-color: #3498db; }
+    .diagram-box.process { border-color: #9b59b6; }
+    .diagram-box.output { border-color: #2ecc71; }
+    .diagram-box.api { border-color: #e74c3c; }
+    .diagram-box.storage { border-color: #f39c12; }
+
+    .diagram-box small {
+      display: block;
+      color: #888;
+      font-size: 0.75rem;
+      margin-top: 5px;
+    }
+
+    .diagram-arrow {
+      color: #f39c12;
+      font-size: 1.5rem;
+    }
+
+    .highlight {
+      background: rgba(243, 156, 18, 0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #f39c12;
+    }
+
+    .file-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin: 15px 0;
+    }
+
+    .file-item {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      border-left: 4px solid #3498db;
+    }
+
+    .file-item .filename {
+      font-family: monospace;
+      color: #3498db;
+      font-size: 0.9rem;
+    }
+
+    .file-item .description {
+      color: #aaa;
+      font-size: 0.85rem;
+      margin-top: 5px;
+    }
+
+    .api-endpoint {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
+      border-left: 4px solid #e74c3c;
+    }
+
+    .api-endpoint .method {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    .api-endpoint .method.post { background: #27ae60; }
+    .api-endpoint .method.get { background: #3498db; }
+
+    .api-endpoint .url {
+      font-family: monospace;
+      color: #f39c12;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 30px 0;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 2px solid;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .summary-table th, .summary-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .summary-table th {
+      background: rgba(0, 0, 0, 0.3);
+      color: #f39c12;
+    }
+
+    .summary-table tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .note {
+      background: rgba(52, 152, 219, 0.2);
+      border-left: 4px solid #3498db;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .note.warning {
+      background: rgba(241, 196, 15, 0.2);
+      border-left-color: #f1c40f;
+    }
+
+    .note.success {
+      background: rgba(46, 204, 113, 0.2);
+      border-left-color: #2ecc71;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, #667eea, #764ba2, #f093fb, #43e97b, #fa709a);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px;
+      padding-left: 20px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 5px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #f39c12;
+      border: 2px solid #1a1a2e;
+    }
+
+    .json-viewer {
+      background: #0d1117;
+      border-radius: 8px;
+      padding: 20px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+
+    .json-key { color: #7ee787; }
+    .json-string { color: #a5d6ff; }
+    .json-number { color: #79c0ff; }
+    .json-bracket { color: #8b949e; }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 1.8rem; }
+      .phase { padding: 20px; }
+      .diagram-row { flex-direction: column; }
+      .diagram-arrow { transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Raga Radio - Complete Flow Documentation</h1>
+    <p class="subtitle">End-to-end journey from user selection to final AI-generated Indian classical music</p>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color" style="border-color: #3498db;"></div>
+        <span>User Input</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="border-color: #9b59b6;"></div>
+        <span>Processing</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="border-color: #2ecc71;"></div>
+        <span>Output</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="border-color: #e74c3c;"></div>
+        <span>External API</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="border-color: #f39c12;"></div>
+        <span>Cloud Storage</span>
+      </div>
+    </div>
+
+    <!-- PHASE 1: User Input & AI Melody Generation -->
+    <div class="phase phase-1">
+      <div class="phase-header">
+        <div class="phase-number">1</div>
+        <div>
+          <div class="phase-title">User Input & AI Melody Generation</div>
+          <div class="phase-subtitle">Before Media Creation - The Intelligence Layer</div>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>1.1 User Selects Options in UI</h3>
+        <div class="diagram">
+          <div class="diagram-row">
+            <div class="diagram-box input">
+              <strong>Raga Selection</strong>
+              <small>e.g., Yaman, Bhairav</small>
+            </div>
+            <div class="diagram-box input">
+              <strong>Instruments</strong>
+              <small>Sitar, Tabla, Shehnai...</small>
+            </div>
+            <div class="diagram-box input">
+              <strong>Duration</strong>
+              <small>30-120 seconds</small>
+            </div>
+            <div class="diagram-box input">
+              <strong>Background Music</strong>
+              <small>Checkbox: Yes/No</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>1.2 API Request to Server</h3>
+        <div class="api-endpoint">
+          <span class="method post">POST</span>
+          <span class="url">/api/generate/{ragaId}/authentic</span>
+        </div>
+        <div class="json-viewer">
+<span class="json-bracket">{</span>
+  <span class="json-key">"instruments"</span>: [<span class="json-string">"sitar"</span>, <span class="json-string">"tabla"</span>],
+  <span class="json-key">"duration"</span>: <span class="json-number">60</span>
+<span class="json-bracket">}</span>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>1.3 Load Raga Data from Database</h3>
+        <p>Server loads complete raga information from <code>src/data/ragas.js</code>:</p>
+        <div class="json-viewer">
+<span class="json-bracket">{</span>
+  <span class="json-key">"name"</span>: <span class="json-string">"Yaman"</span>,
+  <span class="json-key">"thaat"</span>: <span class="json-string">"Kalyan"</span>,
+  <span class="json-key">"aaroha"</span>: <span class="json-string">"N R G M D N S'"</span>,        <span style="color:#8b949e">// Ascending pattern</span>
+  <span class="json-key">"avaroha"</span>: <span class="json-string">"S' N D P M G R S"</span>,     <span style="color:#8b949e">// Descending pattern</span>
+  <span class="json-key">"vadi"</span>: <span class="json-string">"G"</span>,                        <span style="color:#8b949e">// King note (most important)</span>
+  <span class="json-key">"samvadi"</span>: <span class="json-string">"N"</span>,                     <span style="color:#8b949e">// Queen note (2nd important)</span>
+  <span class="json-key">"pakad"</span>: <span class="json-string">"N R G, R G M D N S'"</span>,     <span style="color:#8b949e">// Signature phrase</span>
+  <span class="json-key">"mood"</span>: [<span class="json-string">"Devotional"</span>, <span class="json-string">"Peaceful"</span>],
+  <span class="json-key">"time"</span>: <span class="json-string">"Evening (7 PM - 10 PM)"</span>
+<span class="json-bracket">}</span>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>1.4 AI Melody Generation (OpenAI GPT-4o-mini)</h3>
+        <div class="note success">
+          <strong>NEW!</strong> AI generates musically authentic melodies instead of random weighted selection
+        </div>
+
+        <p><strong>File:</strong> <code>src/services/aiMelodyGenerator.js</code></p>
+
+        <h4 style="margin: 15px 0 10px; color: #9b59b6;">Prompt sent to OpenAI:</h4>
+        <div class="code-block" style="white-space: pre-wrap; font-size: 0.8rem;">
+You are a master Hindustani classical musician. Generate an alap melody for Raga Yaman.
+
+STRICT MELODIC RULES:
+1. AAROHA (ascending): N R G M D N S' - When moving UP, follow this sequence
+2. AVAROHA (descending): S' N D P M G R S - When moving DOWN, follow this sequence
+3. VADI (king note): G - Emphasize this note, hold longer
+4. SAMVADI (queen note): N - Second most important
+5. PAKAD: N R G, R G M D N S' - Include this signature phrase 2-3 times
+
+Generate 40 notes as JSON array...
+        </div>
+
+        <h4 style="margin: 15px 0 10px; color: #2ecc71;">AI Returns Note Sequence:</h4>
+        <div class="json-viewer">
+[
+  <span class="json-bracket">{</span><span class="json-key">"swara"</span>: <span class="json-string">"N"</span>, <span class="json-key">"octave"</span>: <span class="json-number">-1</span>, <span class="json-key">"duration"</span>: <span class="json-number">2.5</span>, <span class="json-key">"type"</span>: <span class="json-string">"held"</span><span class="json-bracket">}</span>,
+  <span class="json-bracket">{</span><span class="json-key">"swara"</span>: <span class="json-string">"S"</span>, <span class="json-key">"octave"</span>: <span class="json-number">0</span>, <span class="json-key">"duration"</span>: <span class="json-number">1.5</span><span class="json-bracket">}</span>,
+  <span class="json-bracket">{</span><span class="json-key">"swara"</span>: <span class="json-string">"R"</span>, <span class="json-key">"octave"</span>: <span class="json-number">0</span>, <span class="json-key">"duration"</span>: <span class="json-number">1.0</span>, <span class="json-key">"type"</span>: <span class="json-string">"passing"</span><span class="json-bracket">}</span>,
+  <span class="json-bracket">{</span><span class="json-key">"swara"</span>: <span class="json-string">"G"</span>, <span class="json-key">"octave"</span>: <span class="json-number">0</span>, <span class="json-key">"duration"</span>: <span class="json-number">3.0</span>, <span class="json-key">"type"</span>: <span class="json-string">"vadi"</span><span class="json-bracket">}</span>,
+  <span style="color:#8b949e">// ... 36 more notes following aaroha/avaroha rules</span>
+]
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>1.5 Convert to MIDI Events</h3>
+        <p><strong>File:</strong> <code>src/services/aiMelodyGenerator.js</code> - <code>convertToEvents()</code></p>
+
+        <div class="diagram">
+          <div class="diagram-row">
+            <div class="diagram-box input">
+              <strong>AI Output</strong>
+              <small>swara: "G", octave: 0</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box process">
+              <strong>Swara Converter</strong>
+              <small>G → E (if tonic=C)</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box output">
+              <strong>MIDI Event</strong>
+              <small>midiNote: 64</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="json-viewer">
+<span style="color:#8b949e">// Converted MIDI Event</span>
+<span class="json-bracket">{</span>
+  <span class="json-key">"midiNote"</span>: <span class="json-number">64</span>,       <span style="color:#8b949e">// MIDI note number (60 = middle C = Sa)</span>
+  <span class="json-key">"swara"</span>: <span class="json-string">"G"</span>,          <span style="color:#8b949e">// Original swara name</span>
+  <span class="json-key">"startTime"</span>: <span class="json-number">5.2</span>,     <span style="color:#8b949e">// When note starts (seconds)</span>
+  <span class="json-key">"duration"</span>: <span class="json-number">3.0</span>,      <span style="color:#8b949e">// How long note plays</span>
+  <span class="json-key">"velocity"</span>: <span class="json-number">85</span>,       <span style="color:#8b949e">// Volume (louder for vadi)</span>
+  <span class="json-key">"isVadi"</span>: <span class="json-number">true</span>,       <span style="color:#8b949e">// Is this the king note?</span>
+  <span class="json-key">"octave"</span>: <span class="json-number">0</span>
+<span class="json-bracket">}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- PHASE 2: MIDI & Audio Creation -->
+    <div class="phase phase-2">
+      <div class="phase-header">
+        <div class="phase-number">2</div>
+        <div>
+          <div class="phase-title">MIDI File & Audio Creation</div>
+          <div class="phase-subtitle">Creating the Reference Audio for Suno</div>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>2.1 Build MIDI File</h3>
+        <p><strong>File:</strong> <code>src/generators/midiBuilder.js</code></p>
+
+        <div class="diagram">
+          <div class="diagram-row">
+            <div class="diagram-box input">
+              <strong>MIDI Events Array</strong>
+              <small>20-40 note events</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box process">
+              <strong>midi-writer-js</strong>
+              <small>Convert to MIDI format</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box output">
+              <strong>.mid File</strong>
+              <small>Standard MIDI Format</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block">
+<span class="comment">// Key conversion: seconds → MIDI ticks</span>
+<span class="key">function</span> secondsToTicks(seconds, tempo = 45) {
+  <span class="comment">// At 45 BPM, 128 ticks per beat:</span>
+  <span class="comment">// 3.0 seconds → 288 ticks</span>
+  <span class="key">return</span> seconds * 128 * (tempo / 60);
+}
+
+<span class="comment">// MIDI file structure:</span>
+- Track name: <span class="string">"Raga Yaman - Kalyan Thaat"</span>
+- Tempo: <span class="number">45</span> BPM (slow for alap)
+- Instrument: <span class="number">104</span> (GM Sitar)
+- Notes: NoteOn/NoteOff events with timing
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>2.2 Upload MIDI to Cloudflare R2</h3>
+        <div class="diagram">
+          <div class="diagram-row">
+            <div class="diagram-box output">
+              <strong>MIDI Buffer</strong>
+              <small>Binary data</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box storage">
+              <strong>Cloudflare R2</strong>
+              <small>Cloud Storage</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box output">
+              <strong>Public URL</strong>
+              <small>For user download</small>
+            </div>
+          </div>
+        </div>
+        <div class="code-block">
+<span class="string">https://pub-xxx.r2.dev/raga-radio/melody_yaman_abc123.mid</span>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>2.3 Render to WAV Audio</h3>
+        <p><strong>File:</strong> <code>src/services/synthesizer.js</code></p>
+        <div class="note">
+          <strong>Why WAV?</strong> Suno's Upload-Cover API needs an audio file to "hear" the melody. MIDI is just data - we need actual sound waves.
+        </div>
+
+        <div class="diagram">
+          <div class="diagram-row">
+            <div class="diagram-box input">
+              <strong>MIDI Events</strong>
+              <small>Note sequence</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box process">
+              <strong>Sine Wave Synthesis</strong>
+              <small>44.1kHz, ADSR envelope</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box output">
+              <strong>.wav File</strong>
+              <small>~3-4 MB for 60s</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block">
+<span class="comment">// Synthesis process:</span>
+1. For each MIDI event:
+   - Generate sine wave at note frequency
+   - Apply ADSR envelope (Attack, Decay, Sustain, Release)
+   - Mix into output buffer
+
+2. Sample rate: <span class="number">44100</span> Hz (CD quality)
+3. Bit depth: <span class="number">16</span>-bit
+4. Channels: Mono
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>2.4 Upload WAV to Cloudflare R2</h3>
+        <div class="code-block">
+<span class="string">https://pub-xxx.r2.dev/raga-radio/melody_yaman_abc123.wav</span>
+<span class="comment">// This URL is sent to Suno - they download and analyze this audio</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- PHASE 3: Suno API - Primary Generation -->
+    <div class="phase phase-3">
+      <div class="phase-header">
+        <div class="phase-number">3</div>
+        <div>
+          <div class="phase-title">Suno Upload-Cover API</div>
+          <div class="phase-subtitle">AI Transforms Simple Melody into Rich Production</div>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>3.1 Build Prompt for Suno</h3>
+        <p><strong>File:</strong> <code>src/services/promptBuilder.js</code> - <code>buildCoverPrompt()</code></p>
+
+        <div class="note warning">
+          <strong>Key Insight:</strong> The WAV file provides the MELODY (notes, timing). The prompt tells Suno HOW to play it (instruments, style, mood).
+        </div>
+
+        <h4 style="margin: 15px 0 10px; color: #f39c12;">What's sent to Suno:</h4>
+      </div>
+
+      <div class="flow-box">
+        <h3>3.2 API Request to Suno (via Kie.ai)</h3>
+        <div class="api-endpoint">
+          <span class="method post">POST</span>
+          <span class="url">https://api.kie.ai/api/v1/generate/upload-cover</span>
+        </div>
+
+        <div class="json-viewer" style="font-size: 0.75rem;">
+<span class="json-bracket">{</span>
+  <span class="json-key">"uploadUrl"</span>: <span class="json-string">"https://r2.dev/.../melody_yaman.wav"</span>,
+
+  <span class="json-key">"prompt"</span>: <span class="json-string">"Create an enchanting Hindustani classical rendition of Raga Yaman...
+
+    CRITICAL - FULL ENSEMBLE featuring ALL of these instruments: Sitar, Tabla.
+    Each instrument MUST be clearly audible throughout.
+
+    PRESERVE THE MELODY: The uploaded audio contains the precise note sequence.
+    Transform it into a rich, multi-layered production.
+
+    INSTRUMENTATION:
+    - MELODIC: majestic sitar with sympathetic strings, meend glides
+    - RHYTHM: expressive tabla with intricate tala patterns
+
+    DO NOT USE: flute, bansuri, vocals, guitar, piano..."</span>,
+
+  <span class="json-key">"style"</span>: <span class="json-string">"Indian Classical Ensemble, Hindustani Raga, Lydian, Kalyan thaat,
+    Devotional, Peaceful, Concert hall reverb"</span>,
+
+  <span class="json-key">"negativeTags"</span>: <span class="json-string">"flute, bansuri, vocals, guitar, piano, violin western"</span>,
+
+  <span class="json-key">"title"</span>: <span class="json-string">"Raga Yaman | 2 Instruments | Devotional"</span>,
+  <span class="json-key">"customMode"</span>: <span class="json-number">true</span>,
+  <span class="json-key">"instrumental"</span>: <span class="json-number">true</span>,
+  <span class="json-key">"model"</span>: <span class="json-string">"V5"</span>,
+  <span class="json-key">"styleWeight"</span>: <span class="json-number">0.7</span>,
+  <span class="json-key">"audioWeight"</span>: <span class="json-number">0.6</span>
+<span class="json-bracket">}</span>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>3.3 What Suno Does Internally</h3>
+        <div class="diagram">
+          <div class="diagram-row">
+            <div class="diagram-box input">
+              <strong>Reference WAV</strong>
+              <small>Simple sine melody</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box api">
+              <strong>Suno AI</strong>
+              <small>Music generation model</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box output">
+              <strong>Full Production</strong>
+              <small>Sitar + Tabla + FX</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline" style="margin-top: 20px;">
+          <div class="timeline-item">
+            <strong>Analyze melody</strong> - Extract notes, rhythm, contour from WAV
+          </div>
+          <div class="timeline-item">
+            <strong>Apply style</strong> - Indian classical, selected instruments
+          </div>
+          <div class="timeline-item">
+            <strong>Generate instruments</strong> - AI creates sitar, tabla sounds
+          </div>
+          <div class="timeline-item">
+            <strong>Mix & master</strong> - Balance, reverb, final audio
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>3.4 Poll for Completion</h3>
+        <p><strong>File:</strong> <code>src/services/sunoApi.js</code> - <code>pollStatus()</code></p>
+
+        <div class="api-endpoint">
+          <span class="method get">GET</span>
+          <span class="url">https://api.kie.ai/api/v1/generate/record-info?taskId={taskId}</span>
+        </div>
+
+        <div class="code-block">
+<span class="comment">// Poll every 10 seconds for up to 5 minutes</span>
+Status progression: PENDING → PROCESSING → SUCCESS
+
+<span class="comment">// On SUCCESS, response includes:</span>
+{
+  <span class="key">"status"</span>: <span class="string">"SUCCESS"</span>,
+  <span class="key">"response"</span>: {
+    <span class="key">"sunoData"</span>: [{
+      <span class="key">"audioUrl"</span>: <span class="string">"https://cdn.suno.ai/xxx.mp3"</span>,
+      <span class="key">"duration"</span>: <span class="number">62.5</span>
+    }]
+  }
+}
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>3.5 Download & Save Generated Track</h3>
+        <div class="diagram">
+          <div class="diagram-row">
+            <div class="diagram-box api">
+              <strong>Suno CDN</strong>
+              <small>Generated MP3</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box process">
+              <strong>Download</strong>
+              <small>Fetch audio buffer</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box storage">
+              <strong>Cloudflare R2</strong>
+              <small>Permanent storage</small>
+            </div>
+          </div>
+        </div>
+        <div class="code-block">
+<span class="string">https://pub-xxx.r2.dev/raga-radio/raga_yaman_p2_1704567890_1.mp3</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- PHASE 4: Optional Background Music -->
+    <div class="phase phase-4">
+      <div class="phase-header">
+        <div class="phase-number">4</div>
+        <div>
+          <div class="phase-title">Add Deep Background Music (Optional)</div>
+          <div class="phase-subtitle">Suno Add-Instrumental API - Creates Atmospheric Layer</div>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>When enabled:</strong> The checkbox "Add Deep Background Music" triggers this second Suno API call
+      </div>
+
+      <div class="flow-box">
+        <h3>4.1 Build Background Music Prompt</h3>
+        <p><strong>File:</strong> <code>src/services/promptBuilder.js</code> - <code>buildBackgroundMusicPrompt()</code></p>
+
+        <div class="json-viewer">
+<span class="json-bracket">{</span>
+  <span class="json-key">"tags"</span>: <span class="json-string">"Indian Classical Background, Ambient Drone, Meditative Pads,
+    Atmospheric, Lydian, Devotional, Peaceful, Deep Bass, Reverb Heavy, Cinematic"</span>,
+
+  <span class="json-key">"negativeTags"</span>: <span class="json-string">"vocals, singing, fast tempo, drums heavy, electronic beats,
+    pop, rock, distortion"</span>,
+
+  <span class="json-key">"title"</span>: <span class="json-string">"Yaman | Deep Ambient Background"</span>
+<span class="json-bracket">}</span>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>4.2 API Request to Add-Instrumental</h3>
+        <div class="api-endpoint">
+          <span class="method post">POST</span>
+          <span class="url">https://api.kie.ai/api/v1/generate/add-instrumental</span>
+        </div>
+
+        <div class="diagram">
+          <div class="diagram-row">
+            <div class="diagram-box input">
+              <strong>Generated Track</strong>
+              <small>Sitar + Tabla MP3</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box api">
+              <strong>Suno Add-Instrumental</strong>
+              <small>Adds background layer</small>
+            </div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-box output">
+              <strong>Final Mix</strong>
+              <small>+ Ambient pads, drone</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>4.3 What Add-Instrumental Does</h3>
+        <ul style="margin-left: 20px; line-height: 2;">
+          <li>Analyzes the existing track's harmony and rhythm</li>
+          <li>Generates complementary ambient background</li>
+          <li>Adds deep bass, atmospheric pads, subtle drone</li>
+          <li>Mixes original + background into final track</li>
+          <li>Preserves original melody and instruments</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- PHASE 5: Final Output -->
+    <div class="phase phase-5">
+      <div class="phase-header">
+        <div class="phase-number">5</div>
+        <div>
+          <div class="phase-title">Final Output & Playback</div>
+          <div class="phase-subtitle">User Receives Complete Track</div>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>5.1 Response to Frontend</h3>
+        <div class="json-viewer">
+<span class="json-bracket">{</span>
+  <span class="json-key">"success"</span>: <span class="json-number">true</span>,
+  <span class="json-key">"tracks"</span>: [{
+    <span class="json-key">"url"</span>: <span class="json-string">"https://r2.dev/.../raga_yaman_p2_xxx.mp3"</span>,
+    <span class="json-key">"filename"</span>: <span class="json-string">"raga_yaman_p2_1704567890_1.mp3"</span>,
+    <span class="json-key">"ragaName"</span>: <span class="json-string">"Yaman"</span>,
+    <span class="json-key">"instruments"</span>: [<span class="json-string">"sitar"</span>, <span class="json-string">"tabla"</span>],
+    <span class="json-key">"referenceAudioUrl"</span>: <span class="json-string">"https://r2.dev/.../melody_yaman.wav"</span>,
+    <span class="json-key">"midiFileUrl"</span>: <span class="json-string">"https://r2.dev/.../melody_yaman.mid"</span>,
+    <span class="json-key">"duration"</span>: <span class="json-number">62.5</span>,
+    <span class="json-key">"createdAt"</span>: <span class="json-string">"2024-01-07T12:30:45.123Z"</span>
+  }]
+<span class="json-bracket">}</span>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>5.2 Files Available to User</h3>
+        <div class="file-list">
+          <div class="file-item">
+            <div class="filename">raga_yaman_p2_xxx.mp3</div>
+            <div class="description">Final AI-generated track with all instruments</div>
+          </div>
+          <div class="file-item">
+            <div class="filename">melody_yaman_xxx.mid</div>
+            <div class="description">MIDI file for download/editing in DAW</div>
+          </div>
+          <div class="file-item">
+            <div class="filename">melody_yaman_xxx.wav</div>
+            <div class="description">Reference audio (sine wave melody)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <h3>5.3 Auto-play in Browser</h3>
+        <p>Frontend receives URL and automatically starts playback</p>
+      </div>
+    </div>
+
+    <!-- Summary Table -->
+    <div class="phase" style="margin-top: 40px;">
+      <h2 style="margin-bottom: 20px; color: #f39c12;">Complete Flow Summary</h2>
+
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Step</th>
+            <th>Component</th>
+            <th>Input</th>
+            <th>Output</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1.4</td>
+            <td>AI Melody (OpenAI)</td>
+            <td>Raga rules + prompt</td>
+            <td>JSON note sequence</td>
+            <td>~3-5 sec</td>
+          </tr>
+          <tr>
+            <td>1.5</td>
+            <td>Convert to MIDI Events</td>
+            <td>JSON notes</td>
+            <td>MIDI events array</td>
+            <td>&lt;1 sec</td>
+          </tr>
+          <tr>
+            <td>2.1</td>
+            <td>Build MIDI File</td>
+            <td>MIDI events</td>
+            <td>.mid file</td>
+            <td>&lt;1 sec</td>
+          </tr>
+          <tr>
+            <td>2.3</td>
+            <td>Render to WAV</td>
+            <td>MIDI events</td>
+            <td>.wav file (~3MB)</td>
+            <td>&lt;1 sec</td>
+          </tr>
+          <tr>
+            <td>2.2, 2.4</td>
+            <td>Upload to R2</td>
+            <td>MIDI + WAV</td>
+            <td>Public URLs</td>
+            <td>~2 sec</td>
+          </tr>
+          <tr>
+            <td>3.2</td>
+            <td>Suno Upload-Cover</td>
+            <td>WAV URL + prompt</td>
+            <td>Task ID</td>
+            <td>&lt;1 sec</td>
+          </tr>
+          <tr>
+            <td>3.4</td>
+            <td>Suno Processing</td>
+            <td>(internal)</td>
+            <td>Generated MP3</td>
+            <td>~2-4 min</td>
+          </tr>
+          <tr>
+            <td>4.2</td>
+            <td>Suno Add-Instrumental</td>
+            <td>MP3 URL + tags</td>
+            <td>Final MP3</td>
+            <td>~2-3 min</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note success" style="margin-top: 20px;">
+        <strong>Total Time:</strong> ~5-8 minutes for complete track with background music
+      </div>
+    </div>
+
+    <!-- Key Files Reference -->
+    <div class="phase" style="margin-top: 40px;">
+      <h2 style="margin-bottom: 20px; color: #f39c12;">Key Files Reference</h2>
+
+      <div class="file-list">
+        <div class="file-item" style="border-left-color: #9b59b6;">
+          <div class="filename">src/services/aiMelodyGenerator.js</div>
+          <div class="description">OpenAI integration, prompt building, note sequence generation</div>
+        </div>
+        <div class="file-item" style="border-left-color: #9b59b6;">
+          <div class="filename">src/generators/midiBuilder.js</div>
+          <div class="description">Convert MIDI events to .mid file format</div>
+        </div>
+        <div class="file-item" style="border-left-color: #9b59b6;">
+          <div class="filename">src/services/synthesizer.js</div>
+          <div class="description">Render MIDI events to WAV audio</div>
+        </div>
+        <div class="file-item" style="border-left-color: #e74c3c;">
+          <div class="filename">src/services/sunoApi.js</div>
+          <div class="description">Suno/Kie.ai API communication</div>
+        </div>
+        <div class="file-item" style="border-left-color: #e74c3c;">
+          <div class="filename">src/services/promptBuilder.js</div>
+          <div class="description">Build prompts for Suno API calls</div>
+        </div>
+        <div class="file-item" style="border-left-color: #f39c12;">
+          <div class="filename">src/services/cloudflare-r2.js</div>
+          <div class="description">File upload/download to R2 storage</div>
+        </div>
+        <div class="file-item" style="border-left-color: #3498db;">
+          <div class="filename">src/data/ragas.js</div>
+          <div class="description">68+ raga definitions with aaroha, avaroha, pakad</div>
+        </div>
+        <div class="file-item" style="border-left-color: #2ecc71;">
+          <div class="filename">src/server.js</div>
+          <div class="description">Express server, orchestrates entire flow</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#E8E4F0">
+  <title>Raga Radio</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="apple-touch-icon" href="/images/icon-180.png">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-top">
+        <div class="header-content">
+          <h1 class="app-title">Raga Radio</h1>
+          <p class="app-subtitle">Indian Classical Music</p>
+        </div>
+        <button class="filter-btn" id="filter-btn">
+          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+      </div>
+      <!-- Active Filter Tags -->
+      <div class="filter-tags" id="filter-tags">
+        <span class="filter-tag active" data-filter="time">
+          <span>By Time</span>
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </span>
+      </div>
+    </header>
+
+    <!-- Filter Panel (Slide-in from right) -->
+    <div class="filter-panel-backdrop hidden" id="filter-panel-backdrop"></div>
+    <aside class="filter-panel" id="filter-panel">
+      <div class="filter-panel-header">
+        <h2>Browse</h2>
+        <button class="filter-panel-close" id="filter-panel-close">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <nav class="filter-list">
+        <button class="filter-item" data-category="library">
+          <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+          <span>My Library</span>
+        </button>
+        <button class="filter-item active" data-category="time">
+          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+          <span>By Time</span>
+        </button>
+        <button class="filter-item" data-category="mood">
+          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+          <span>By Mood</span>
+        </button>
+        <button class="filter-item" data-category="all">
+          <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+          <span>All Ragas</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- Library Section -->
+      <section class="category-section hidden" id="library-section">
+        <div class="library-header">
+          <h2>My Generated Tracks</h2>
+          <p>Your personal raga collection</p>
+        </div>
+        <div class="library-stats" id="library-stats">
+          <span class="stat"><strong id="track-count">0</strong> tracks</span>
+          <span class="stat"><strong id="total-duration">0:00</strong> total</span>
+        </div>
+        <div class="track-list" id="track-list">
+          <div class="empty-library">
+            <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></span>
+            <p>No tracks generated yet</p>
+            <p class="empty-hint">Generate your first raga from the "By Time" or "By Mood" tabs</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Time-based Categories -->
+      <section class="category-section" id="time-section">
+        <div class="time-category" data-time="morning">
+          <div class="category-header">
+            <span class="category-icon"><svg viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg></span>
+            <div class="category-info">
+              <h2>Morning Ragas</h2>
+              <p>4 AM - 10 AM</p>
+            </div>
+          </div>
+          <div class="raga-grid" id="morning-ragas"></div>
+        </div>
+
+        <div class="time-category" data-time="afternoon">
+          <div class="category-header">
+            <span class="category-icon"><svg viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/></svg></span>
+            <div class="category-info">
+              <h2>Afternoon Ragas</h2>
+              <p>10 AM - 4 PM</p>
+            </div>
+          </div>
+          <div class="raga-grid" id="afternoon-ragas"></div>
+        </div>
+
+        <div class="time-category" data-time="evening">
+          <div class="category-header">
+            <span class="category-icon"><svg viewBox="0 0 24 24"><path d="M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-10c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/></svg></span>
+            <div class="category-info">
+              <h2>Evening Ragas</h2>
+              <p>4 PM - 10 PM</p>
+            </div>
+          </div>
+          <div class="raga-grid" id="evening-ragas"></div>
+        </div>
+
+        <div class="time-category" data-time="night">
+          <div class="category-header">
+            <span class="category-icon"><svg viewBox="0 0 24 24"><path d="M9 2c-1.05 0-2.05.16-3 .46 4.06 1.27 7 5.06 7 9.54 0 4.48-2.94 8.27-7 9.54.95.3 1.95.46 3 .46 5.52 0 10-4.48 10-10S14.52 2 9 2z"/></svg></span>
+            <div class="category-info">
+              <h2>Night Ragas</h2>
+              <p>10 PM - 4 AM</p>
+            </div>
+          </div>
+          <div class="raga-grid" id="night-ragas"></div>
+        </div>
+      </section>
+
+      <!-- Mood-based Categories -->
+      <section class="category-section hidden" id="mood-section">
+        <div class="mood-category" data-mood="devotional">
+          <div class="category-header">
+            <span class="category-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span>
+            <div class="category-info">
+              <h2>Devotional</h2>
+              <p>Spiritual & Sacred</p>
+            </div>
+          </div>
+          <div class="raga-grid" id="devotional-ragas"></div>
+        </div>
+
+        <div class="mood-category" data-mood="romantic">
+          <div class="category-header">
+            <span class="category-icon"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>
+            <div class="category-info">
+              <h2>Romantic</h2>
+              <p>Love & Longing</p>
+            </div>
+          </div>
+          <div class="raga-grid" id="romantic-ragas"></div>
+        </div>
+
+        <div class="mood-category" data-mood="peaceful">
+          <div class="category-header">
+            <span class="category-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></svg></span>
+            <div class="category-info">
+              <h2>Peaceful</h2>
+              <p>Calm & Meditative</p>
+            </div>
+          </div>
+          <div class="raga-grid" id="peaceful-ragas"></div>
+        </div>
+
+        <div class="mood-category" data-mood="serious">
+          <div class="category-header">
+            <span class="category-icon"><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></span>
+            <div class="category-info">
+              <h2>Serious</h2>
+              <p>Deep & Contemplative</p>
+            </div>
+          </div>
+          <div class="raga-grid" id="serious-ragas"></div>
+        </div>
+      </section>
+
+      <!-- All Ragas -->
+      <section class="category-section hidden" id="all-section">
+        <div class="all-ragas-header">
+          <h2>All Ragas</h2>
+          <p>Complete collection</p>
+        </div>
+        <div class="raga-grid" id="all-ragas"></div>
+      </section>
+    </main>
+
+    <!-- Now Playing Bar (Mini Player) -->
+    <div class="now-playing-bar hidden" id="now-playing">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="now-playing-content">
+        <div class="now-playing-info">
+          <div class="now-playing-artwork" id="mini-player-artwork"><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+          <div class="now-playing-details">
+            <span class="now-playing-title" id="mini-player-title">-</span>
+            <span class="now-playing-subtitle" id="mini-player-subtitle">-</span>
+          </div>
+        </div>
+        <div class="now-playing-controls">
+          <button class="control-btn" id="play-pause-btn">
+            <svg class="icon play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="icon pause-icon hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Screen Player -->
+    <div class="full-player" id="full-player">
+      <div class="full-player-header">
+        <button class="full-player-close" id="full-player-close">
+          <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+        </button>
+        <span class="full-player-title">Playing Now</span>
+        <button class="full-player-menu" id="full-player-menu">
+          <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        </button>
+      </div>
+
+      <div class="full-player-artwork-container">
+        <div class="full-player-artwork">
+          <div class="full-player-artwork-inner" id="full-player-artwork-inner"><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+        </div>
+
+        <div class="full-player-info">
+          <h2 class="full-player-track-title" id="full-player-title">-</h2>
+          <p class="full-player-track-subtitle" id="full-player-subtitle">-</p>
+        </div>
+
+        <!-- Waveform Visualizer -->
+        <div class="waveform-container full-player-waveform" id="waveform-container">
+          <canvas class="waveform-canvas" id="waveform-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="full-player-progress">
+        <div class="full-player-progress-bar">
+          <div class="full-player-progress-fill" id="full-player-progress-fill"></div>
+        </div>
+        <div class="full-player-time">
+          <span id="full-player-current-time">0:00</span>
+          <span id="full-player-duration">0:00</span>
+        </div>
+      </div>
+
+      <div class="full-player-controls">
+        <button class="full-player-btn" id="full-player-prev">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="full-player-btn full-player-btn-play" id="full-player-play-btn">
+          <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="pause-icon hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button class="full-player-btn" id="full-player-next">
+          <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Raga Detail Modal -->
+    <div class="modal hidden" id="raga-modal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <button class="modal-close" id="modal-close">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+        <div class="modal-header">
+          <div class="modal-artwork" id="modal-artwork"></div>
+          <div class="modal-info">
+            <h2 class="modal-title" id="modal-title">Raga Name</h2>
+            <p class="modal-thaat" id="modal-thaat">Thaat</p>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="detail-row">
+            <span class="detail-label">Time</span>
+            <span class="detail-value" id="modal-time">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Mood</span>
+            <span class="detail-value" id="modal-mood">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Scale (Indian)</span>
+            <span class="detail-value" id="modal-scale-indian">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Scale (Western)</span>
+            <span class="detail-value" id="modal-scale-western">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Mode</span>
+            <span class="detail-value" id="modal-mode">-</span>
+          </div>
+          <p class="modal-description" id="modal-description">-</p>
+
+          <!-- Generation Options -->
+          <div class="generation-options" id="generation-options">
+            <h3 class="options-title">Generation Options</h3>
+
+            <div class="option-group">
+              <label for="mode-select">Mode</label>
+              <select id="mode-select" class="option-select">
+                <option value="standard">Standard (Suno AI)</option>
+                <option value="authentic" selected>Authentic (Precise Melody + Suno)</option>
+              </select>
+              <p class="option-hint" id="mode-hint">Generates precise raga melody, then transforms with Suno</p>
+            </div>
+
+            <div class="option-group" id="genre-group">
+              <label for="genre-select">Genre Style</label>
+              <select id="genre-select" class="option-select">
+                <option value="indianClassical">Indian Classical (Traditional)</option>
+                <option value="atmospheric">Atmospheric / Ambient</option>
+                <option value="metal">Metal / Heavy</option>
+                <option value="electronic">Electronic / EDM</option>
+                <option value="lofi">Lo-fi / Chill</option>
+                <option value="jazzFusion">Jazz Fusion</option>
+                <option value="worldFusion">World Fusion</option>
+                <option value="orchestral">Orchestral / Cinematic</option>
+              </select>
+              <p class="option-hint" id="genre-hint">AI suggests genre based on raga mood. Changing genre updates available instruments.</p>
+            </div>
+
+            <div class="option-group" id="instrument-group">
+              <label for="instrument-select">Instruments (select multiple)</label>
+              <select id="instrument-select" class="option-select multi-select" multiple size="5">
+                <!-- Instruments are populated dynamically based on genre -->
+              </select>
+              <p class="option-hint">Hold Ctrl/Cmd to select multiple instruments</p>
+            </div>
+
+            <div class="option-group" id="duration-group">
+              <label for="duration-select">Duration</label>
+              <select id="duration-select" class="option-select">
+                <option value="30">30 seconds</option>
+                <option value="60" selected>1 minute</option>
+                <option value="90">1.5 minutes</option>
+                <option value="120">2 minutes</option>
+              </select>
+            </div>
+
+            <div class="option-group" id="background-music-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="add-background-music" checked>
+                <span class="checkbox-text">Add Deep Background Music</span>
+              </label>
+              <p class="option-hint">After generating the raga tune, adds atmospheric background music matching the raga's mood using Suno's remix feature</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary hidden" id="modal-share-btn">
+            <svg class="btn-icon" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+            <span>Share</span>
+          </button>
+          <button class="btn btn-primary" id="generate-btn">
+            <svg class="btn-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            <span>Generate Track</span>
+          </button>
+          <button class="btn btn-secondary hidden" id="play-btn">
+            <svg class="btn-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <span>Play</span>
+          </button>
+        </div>
+        <div class="generation-status hidden" id="generation-status">
+          <div class="status-spinner"></div>
+          <span class="status-text">Generating...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Element -->
+  <audio id="audio-player"></audio>
+
+  <!-- Toast Notification -->
+  <div class="toast-notification hidden" id="toast-notification">
+    <svg class="toast-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    <span class="toast-message" id="toast-message">Link copied!</span>
+  </div>
+
+  <!-- Copy Link Modal (fallback) -->
+  <div class="copy-modal hidden" id="copy-modal">
+    <div class="modal-backdrop"></div>
+    <div class="copy-modal-content">
+      <button class="modal-close" id="copy-modal-close">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+      <h3 class="copy-modal-title">Share this track</h3>
+      <textarea class="copy-modal-textarea" id="copy-modal-text" readonly></textarea>
+      <button class="btn btn-primary copy-modal-btn" id="copy-modal-btn">
+        <svg class="btn-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        <span>Copy to Clipboard</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
