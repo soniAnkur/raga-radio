@@ -22,6 +22,7 @@ import { buildMidi, getMidiInfo } from './generators/midiBuilder.js';
 import { renderToWav, getAudioInfo } from './services/synthesizer.js';
 import { uploadFileToR2, isR2Configured } from './services/cloudflare-r2.js';
 import appConfig from './config.js';
+import features from './features.js';
 import { v4 as uuidv4 } from 'uuid';
 import { mkdir } from 'fs/promises';
 
@@ -177,6 +178,18 @@ app.get('/api/instruments', (req, res) => {
       role: i.role,
       sunoDesc: i.sunoDesc,
     }))
+  });
+});
+
+/**
+ * Get feature flags for the frontend
+ * Returns which features are enabled/disabled based on environment
+ */
+app.get('/api/features', (req, res) => {
+  log.debug('Fetching feature flags', features);
+  res.json({
+    success: true,
+    features,
   });
 });
 

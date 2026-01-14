@@ -11,6 +11,9 @@ const state = {
   libraryTracks: [],
   genres: [],
   instruments: [],
+  features: {
+    enableGeneration: true, // Default to true, will be updated from server
+  },
   currentRaga: null,
   currentTrack: null,
   currentTrackIndex: -1,
@@ -506,6 +509,37 @@ async function fetchGenreInstruments(genreId) {
   } catch (error) {
     console.error('Failed to fetch genre instruments:', error);
     populateDefaultInstruments();
+  }
+}
+
+async function fetchFeatures() {
+  try {
+    const response = await fetch('/api/features');
+    const data = await response.json();
+    if (data.success) {
+      state.features = data.features;
+      applyFeatureFlags();
+    }
+  } catch (error) {
+    console.error('Failed to fetch features:', error);
+    // Keep default values if fetch fails
+  }
+}
+
+/**
+ * Apply feature flags to the UI
+ * Hides/shows elements based on enabled features
+ */
+function applyFeatureFlags() {
+  // Hide Generate tab if generation is disabled
+  const generateTab = document.querySelector('.modal-tab[data-tab="generate"]');
+  if (generateTab) {
+    generateTab.style.display = state.features.enableGeneration ? '' : 'none';
+  }
+
+  // Also hide the generate button
+  if (elements.generateBtn) {
+    elements.generateBtn.style.display = state.features.enableGeneration ? '' : 'none';
   }
 }
 
@@ -1569,6 +1603,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   initEventListeners();
+
+  // Fetch feature flags first to configure UI
+  await fetchFeatures();
 
   // Fetch data in parallel
   await Promise.all([
