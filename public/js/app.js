@@ -104,15 +104,14 @@ const elements = {
 
   // Generation Options
   generationOptions: document.getElementById('generation-options'),
-  modeSelect: document.getElementById('mode-select'),
-  genreSelect: document.getElementById('genre-select'),
+  modeControl: document.getElementById('mode-control'),
+  genreControl: document.getElementById('genre-control'),
   genreHint: document.getElementById('genre-hint'),
   instrumentSelect: document.getElementById('instrument-select'),
   instrumentSelector: document.getElementById('instrument-selector'),
   durationSelect: document.getElementById('duration-select'),
   instrumentGroup: document.getElementById('instrument-group'),
   durationGroup: document.getElementById('duration-group'),
-  modeHint: document.getElementById('mode-hint'),
   addBackgroundMusic: document.getElementById('add-background-music'),
 
   // Modal Tabs
@@ -153,6 +152,35 @@ function switchModalTab(tabName) {
   // Update content visibility
   document.querySelectorAll('.tab-content').forEach(content => {
     content.classList.toggle('active', content.id === `tab-${tabName}`);
+  });
+}
+
+// ============================================
+// Segmented Control Helpers
+// ============================================
+function getSegmentValue(controlId) {
+  const control = document.getElementById(controlId);
+  const active = control?.querySelector('.segment.active');
+  return active?.dataset.value || null;
+}
+
+function setSegmentValue(controlId, value) {
+  const control = document.getElementById(controlId);
+  if (!control) return;
+  control.querySelectorAll('.segment').forEach(seg => {
+    seg.classList.toggle('active', seg.dataset.value === value);
+  });
+}
+
+function setupSegmentedControl(controlId, onChange) {
+  const control = document.getElementById(controlId);
+  if (!control) return;
+  control.querySelectorAll('.segment').forEach(seg => {
+    seg.addEventListener('click', () => {
+      control.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
+      seg.classList.add('active');
+      if (onChange) onChange(seg.dataset.value);
+    });
   });
 }
 
@@ -686,8 +714,8 @@ async function suggestGenreForRaga(ragaId) {
     const data = await response.json();
     if (data.success && data.suggestedGenres.length > 0) {
       const suggested = data.suggestedGenres[0];
-      if (elements.genreSelect) {
-        elements.genreSelect.value = suggested.id;
+      setSegmentValue('genre-control', suggested.id);
+      if (elements.genreHint) {
         elements.genreHint.textContent = `Suggested: ${suggested.name} (matches ${data.moods.join(', ')} mood)`;
       }
       state.currentGenre = suggested.id;
@@ -943,8 +971,8 @@ async function generateRaga(ragaId) {
   state.generatingRagas.add(ragaId);
   updateGenerateButton(true);
 
-  const mode = elements.modeSelect?.value || 'standard';
-  const genre = elements.genreSelect?.value || state.currentGenre || 'indianClassical';
+  const mode = getSegmentValue('mode-control') || 'authentic';
+  const genre = getSegmentValue('genre-control') || state.currentGenre || 'indianClassical';
 
   // Use badge selector for instruments
   const instruments = getSelectedInstruments();
@@ -1486,34 +1514,21 @@ function initEventListeners() {
     }
   });
 
-  // Mode select
-  if (elements.modeSelect) {
-    elements.modeSelect.addEventListener('change', (e) => {
-      const mode = e.target.value;
-      const options = elements.generationOptions;
+  // Mode segmented control
+  setupSegmentedControl('mode-control', (mode) => {
+    const options = elements.generationOptions;
+    if (mode === 'authentic') {
+      options?.classList.remove('standard-mode');
+    } else {
+      options?.classList.add('standard-mode');
+    }
+  });
 
-      if (mode === 'authentic') {
-        options?.classList.remove('standard-mode');
-        elements.modeHint.textContent = 'Generates precise raga melody, then transforms with Suno';
-      } else {
-        options?.classList.add('standard-mode');
-        elements.modeHint.textContent = 'Full AI generation by Suno (raga-inspired, not precise)';
-      }
-    });
-  }
-
-  // Genre select
-  if (elements.genreSelect) {
-    elements.genreSelect.addEventListener('change', async (e) => {
-      const genreId = e.target.value;
-      state.currentGenre = genreId;
-      const genre = state.genres.find(g => g.id === genreId);
-      if (genre) {
-        elements.genreHint.textContent = genre.description;
-      }
-      await fetchGenreInstruments(genreId);
-    });
-  }
+  // Genre segmented control
+  setupSegmentedControl('genre-control', async (genreId) => {
+    state.currentGenre = genreId;
+    await fetchGenreInstruments(genreId);
+  });
 
   // Play button in modal
   elements.playBtn.addEventListener('click', () => {

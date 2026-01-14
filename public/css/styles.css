@@ -1040,19 +1040,63 @@ body {
 }
 
 /* ============================================
+   SEGMENTED CONTROL
+   ============================================ */
+.segmented-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  background: var(--glass-white-subtle);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+}
+
+.segment {
+  flex: 1 1 calc(50% - 3px);
+  min-width: fit-content;
+  padding: 10px 12px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  font-family: var(--font-family);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.segment:hover {
+  color: var(--text-primary);
+}
+
+.segment.active {
+  background: var(--glass-white);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px var(--glass-shadow);
+}
+
+/* Genre grid: 4 per row */
+.segmented-control.genre-control .segment {
+  flex: 1 1 calc(25% - 6px);
+  padding: 8px 6px;
+  font-size: var(--font-size-xs);
+}
+
+/* ============================================
    INSTRUMENT BADGE SELECTOR
    ============================================ */
 .instrument-selector {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  max-height: 280px;
-  overflow-y: auto;
+  gap: var(--space-sm);
   padding: var(--space-sm);
   background: var(--glass-white-subtle);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  -webkit-overflow-scrolling: touch;
 }
 
 .instrument-category {
@@ -1072,8 +1116,17 @@ body {
 
 .instrument-badges {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--space-xs);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+
+.instrument-badges::-webkit-scrollbar {
+  display: none;
 }
 
 .instrument-badge {
@@ -1081,7 +1134,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 8px 14px;
-  min-height: 44px;
+  min-height: 36px;
   font-size: var(--font-size-sm);
   font-weight: 500;
   font-family: var(--font-family);
@@ -1094,6 +1147,9 @@ body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  white-space: nowrap;
 }
 
 .instrument-badge:hover {

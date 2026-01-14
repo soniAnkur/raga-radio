@@ -335,27 +335,25 @@
           <div class="tab-content" id="tab-generate">
             <div class="generation-options" id="generation-options">
               <div class="option-group">
-                <label for="mode-select">Mode</label>
-                <select id="mode-select" class="option-select">
-                  <option value="standard">Standard (Suno AI)</option>
-                  <option value="authentic" selected>Authentic (Precise Melody + Suno)</option>
-                </select>
-                <p class="option-hint" id="mode-hint">Generates precise raga melody, then transforms with Suno</p>
+                <label>Mode</label>
+                <div class="segmented-control" id="mode-control">
+                  <button type="button" class="segment" data-value="standard">Standard</button>
+                  <button type="button" class="segment active" data-value="authentic">Authentic</button>
+                </div>
               </div>
 
               <div class="option-group" id="genre-group">
-                <label for="genre-select">Genre Style</label>
-                <select id="genre-select" class="option-select">
-                  <option value="indianClassical">Indian Classical (Traditional)</option>
-                  <option value="atmospheric">Atmospheric / Ambient</option>
-                  <option value="metal">Metal / Heavy</option>
-                  <option value="electronic">Electronic / EDM</option>
-                  <option value="lofi">Lo-fi / Chill</option>
-                  <option value="jazzFusion">Jazz Fusion</option>
-                  <option value="worldFusion">World Fusion</option>
-                  <option value="orchestral">Orchestral / Cinematic</option>
-                </select>
-                <p class="option-hint" id="genre-hint">AI suggests genre based on raga mood.</p>
+                <label>Genre Style</label>
+                <div class="segmented-control genre-control" id="genre-control">
+                  <button type="button" class="segment active" data-value="indianClassical">Classical</button>
+                  <button type="button" class="segment" data-value="atmospheric">Ambient</button>
+                  <button type="button" class="segment" data-value="metal">Metal</button>
+                  <button type="button" class="segment" data-value="electronic">EDM</button>
+                  <button type="button" class="segment" data-value="lofi">Lo-fi</button>
+                  <button type="button" class="segment" data-value="jazzFusion">Jazz</button>
+                  <button type="button" class="segment" data-value="worldFusion">World</button>
+                  <button type="button" class="segment" data-value="orchestral">Orchestral</button>
+                </div>
               </div>
 
               <div class="option-group" id="instrument-group">
