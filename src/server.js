@@ -280,8 +280,8 @@ app.get('/api/status/:taskId', async (req, res) => {
  * Poll and download when complete
  */
 app.post('/api/download/:taskId', async (req, res) => {
-  const { ragaName, ragaId, instruments, referenceAudioUrl, midiFileUrl } = req.body;
-  log.info(`📥 Download request`, { taskId: req.params.taskId, ragaName, instruments, referenceAudioUrl, midiFileUrl });
+  const { ragaName, ragaId, instruments, referenceAudioUrl, midiFileUrl, genre } = req.body;
+  log.info(`📥 Download request`, { taskId: req.params.taskId, ragaName, instruments, referenceAudioUrl, midiFileUrl, genre });
 
   try {
     checkApiKey();
@@ -293,6 +293,7 @@ app.post('/api/download/:taskId', async (req, res) => {
     const tracks = await downloadTracks(record, ragaName || 'unknown', {
       ragaId,
       instruments,
+      genre,
       referenceAudioUrl,
       midiFileUrl,
     });
@@ -589,8 +590,8 @@ app.post('/api/remix/:ragaId', async (req, res) => {
  * Download remix result and save to library
  */
 app.post('/api/remix/download/:taskId', async (req, res) => {
-  const { ragaName, ragaId, instruments, referenceAudioUrl, midiFileUrl, originalAudioUrl } = req.body;
-  log.info(`📥 Remix download request`, { taskId: req.params.taskId, ragaName });
+  const { ragaName, ragaId, instruments, referenceAudioUrl, midiFileUrl, originalAudioUrl, genre } = req.body;
+  log.info(`📥 Remix download request`, { taskId: req.params.taskId, ragaName, genre });
 
   try {
     checkApiKey();
@@ -602,6 +603,7 @@ app.post('/api/remix/download/:taskId', async (req, res) => {
     const tracks = await downloadTracks(record, ragaName || 'unknown', {
       ragaId,
       instruments,
+      genre,
       referenceAudioUrl,
       midiFileUrl,
       isRemix: true,
@@ -659,6 +661,7 @@ app.get('/api/tracks', async (req, res) => {
       return {
         ...track,
         raga: ragaInfo,
+        genre: track.genre || 'indianClassical', // Default for legacy tracks
       };
     }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Newest first
 

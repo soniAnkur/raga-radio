@@ -242,6 +242,7 @@ export async function downloadTracks(record, ragaName, options = {}) {
         ragaName,
         ragaId: options.ragaId,
         instruments: options.instruments || [],
+        genre: options.genre || 'indianClassical',
         referenceAudioUrl: options.referenceAudioUrl,
         midiFileUrl: options.midiFileUrl,
         createdAt: new Date().toISOString(),

@@ -141,6 +141,89 @@ const musicNoteIcon = '<svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.
 const shareIcon = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>';
 
 // ============================================
+// Instrument & Genre Emoji Mappings
+// ============================================
+const INSTRUMENT_EMOJIS = {
+  // Indian Classical
+  sitar: '🎸', sarod: '🎻', veena: '🪕', tanpura: '🎸', santoor: '🪘',
+  bansuri: '🪈', shehnai: '🎺', tabla: '🥁', pakhawaj: '🥁',
+  mridangam: '🪘', harmonium: '🎹', vocal: '🎤',
+  // Western Electric
+  electric_guitar: '🎸', bass_guitar: '🎸', drums: '🥁',
+  double_bass_drums: '🥁',
+  // Western Acoustic
+  acoustic_guitar: '🎸', piano: '🎹', cello: '🎻',
+  strings: '🎻', strings_section: '🎻', flute: '🪈',
+  // Jazz
+  saxophone: '🎷', jazz_guitar: '🎸', upright_bass: '🎻',
+  jazz_drums: '🥁', trumpet: '🎺',
+  // Electronic
+  synth_pad: '🎹', synth_lead: '🎹', synth_bass: '🎹',
+  electronic_drums: '🥁', '808': '🔊', arpeggiator: '🎹',
+  vocoder: '🎤', pluck_synth: '🎹',
+  // Lo-fi
+  lofi_piano: '🎹', mellow_guitar: '🎸', soft_drums: '🥁',
+  bass: '🎸', rhodes: '🎹', vinyl_fx: '💿', jazz_keys: '🎹',
+  // Orchestral
+  brass: '🎺', woodwinds: '🎺', timpani: '🥁', harp: '🎵',
+  choir: '🎤', french_horn: '🎺', orchestral_hits: '🎵',
+  // World/Fusion
+  ambient_guitar: '🎸', glass_marimba: '🎵', cajon: '🥁',
+  didgeridoo: '🎺', handpan: '🥁', kalimba: '🎵',
+  oud: '🪕', djembe: '🥁'
+};
+
+const INSTRUMENT_NAMES = {
+  sitar: 'Sitar', sarod: 'Sarod', veena: 'Veena', tanpura: 'Tanpura',
+  santoor: 'Santoor', bansuri: 'Bansuri', shehnai: 'Shehnai',
+  tabla: 'Tabla', pakhawaj: 'Pakhawaj', mridangam: 'Mridangam',
+  harmonium: 'Harmonium', vocal: 'Vocal',
+  electric_guitar: 'Electric Guitar', bass_guitar: 'Bass Guitar',
+  drums: 'Drums', double_bass_drums: 'Double Bass Drums',
+  acoustic_guitar: 'Acoustic Guitar', piano: 'Piano', cello: 'Cello',
+  strings: 'Strings', strings_section: 'Strings Section', flute: 'Flute',
+  saxophone: 'Saxophone', jazz_guitar: 'Jazz Guitar',
+  upright_bass: 'Upright Bass', jazz_drums: 'Jazz Drums',
+  trumpet: 'Trumpet',
+  synth_pad: 'Synth Pad', synth_lead: 'Synth Lead',
+  synth_bass: 'Synth Bass', electronic_drums: 'Electronic Drums',
+  '808': '808', arpeggiator: 'Arpeggiator', vocoder: 'Vocoder',
+  pluck_synth: 'Pluck Synth',
+  lofi_piano: 'Lo-fi Piano', mellow_guitar: 'Mellow Guitar',
+  soft_drums: 'Soft Drums', bass: 'Bass', rhodes: 'Rhodes',
+  vinyl_fx: 'Vinyl FX', jazz_keys: 'Jazz Keys',
+  brass: 'Brass', woodwinds: 'Woodwinds', timpani: 'Timpani',
+  harp: 'Harp', choir: 'Choir', french_horn: 'French Horn',
+  orchestral_hits: 'Orchestral Hits',
+  ambient_guitar: 'Ambient Guitar', glass_marimba: 'Glass Marimba',
+  cajon: 'Cajon', didgeridoo: 'Didgeridoo', handpan: 'Handpan',
+  kalimba: 'Kalimba', oud: 'Oud', djembe: 'Djembe'
+};
+
+const GENRE_NAMES = {
+  'indianClassical': 'Indian Classical',
+  'atmospheric': 'Atmospheric / Ambient',
+  'metal': 'Metal / Heavy',
+  'electronic': 'Electronic / EDM',
+  'lofi': 'Lo-fi / Chill',
+  'jazzFusion': 'Jazz Fusion',
+  'worldFusion': 'World Fusion',
+  'orchestral': 'Orchestral / Cinematic'
+};
+
+function getInstrumentEmoji(id) {
+  return INSTRUMENT_EMOJIS[id] || '🎵';
+}
+
+function getInstrumentName(id) {
+  return INSTRUMENT_NAMES[id] || id;
+}
+
+function getGenreDisplayName(genreId) {
+  return GENRE_NAMES[genreId] || genreId;
+}
+
+// ============================================
 // Modal Tab Switching
 // ============================================
 function switchModalTab(tabName) {
@@ -748,29 +831,12 @@ function renderLibrary() {
   elements.trackList.innerHTML = tracks.map((track, index) => {
     const raga = track.raga;
     const ragaName = raga ? raga.name : track.ragaKey || track.ragaName || 'Unknown';
-    const thaat = raga ? raga.thaat : '';
-    const time = raga ? raga.time : '';
-    const mode = raga ? raga.westernMode : '';
-    const hasRefAudio = !!track.referenceAudioUrl;
-
-    // Build minimal subtitle
-    let subtitle = '';
-    if (thaat) subtitle = thaat + ' Thaat';
-    if (mode) subtitle += (subtitle ? ' • ' : '') + mode;
-
-    // Extract simple time label (e.g., "Morning" from "Early Morning (6-9 AM)")
-    const simpleTime = time ? time.split('(')[0].trim() : '';
 
     return `
-      <div class="track-item ${hasRefAudio ? 'authentic-track' : ''}" data-url="${track.url}" data-index="${index}">
+      <div class="track-item" data-url="${track.url}" data-index="${index}">
         <div class="track-artwork">${musicNoteIcon}</div>
         <div class="track-info">
           <div class="track-title">Raga ${ragaName}</div>
-          <div class="track-subtitle">${subtitle}</div>
-          <div class="track-meta">
-            ${simpleTime ? `<span class="meta-tag time-tag">${simpleTime}</span>` : ''}
-            ${hasRefAudio ? `<span class="meta-tag authentic-tag">Authentic</span>` : ''}
-          </div>
         </div>
         <div class="track-actions">
           <button class="track-share-btn" onclick="event.stopPropagation(); shareTrackByIndex(${index})" title="Share">
@@ -810,7 +876,15 @@ function showTrackDetails(index) {
   elements.modalThaat.textContent = raga ? `${raga.thaat} Thaat` : '';
   elements.modalArtwork.innerHTML = musicNoteIcon;
   elements.modalTime.textContent = raga ? raga.time : '';
-  elements.modalMood.textContent = raga ? raga.mood.join(', ') : '';
+  // Enhanced mood rendering with badges
+  if (raga && raga.mood && raga.mood.length > 0) {
+    const moodBadges = raga.mood.map(mood =>
+      `<span class="mood-badge">${mood}</span>`
+    ).join('');
+    elements.modalMood.innerHTML = moodBadges;
+  } else {
+    elements.modalMood.innerHTML = '<span style="color: var(--text-tertiary)">-</span>';
+  }
   elements.modalScaleIndian.textContent = raga ? raga.scaleIndian : '';
   elements.modalScaleWestern.textContent = raga ? raga.westernNotes : '';
   elements.modalMode.textContent = raga ? raga.westernMode : '';
@@ -820,6 +894,7 @@ function showTrackDetails(index) {
   document.querySelectorAll('.modal-dynamic-row').forEach(el => el.remove());
 
   const instruments = Array.isArray(track.instruments) ? track.instruments : (track.instrument ? [track.instrument] : []);
+  const genre = track.genre || 'indianClassical';
   const dateStr = new Date(track.createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -831,18 +906,34 @@ function showTrackDetails(index) {
   const detailsContainer = artifactButtons?.parentNode || elements.modalDescription.parentNode;
   const insertBeforeEl = artifactButtons || elements.modalDescription;
 
-  // Instruments row
+  // 1. Genre row
+  const genreRow = document.createElement('div');
+  genreRow.className = 'detail-row modal-dynamic-row';
+  genreRow.innerHTML = `
+    <span class="detail-label">Genre</span>
+    <span class="detail-value detail-genre">${getGenreDisplayName(genre)}</span>
+  `;
+  detailsContainer.insertBefore(genreRow, insertBeforeEl);
+
+  // 2. Enhanced Instruments row with emojis
   if (instruments.length > 0) {
     const instrumentsRow = document.createElement('div');
-    instrumentsRow.className = 'detail-row modal-dynamic-row';
+    instrumentsRow.className = 'detail-row modal-dynamic-row detail-row-instruments';
+
+    const instrumentsHtml = instruments.map(id => {
+      const emoji = getInstrumentEmoji(id);
+      const name = getInstrumentName(id);
+      return `<span class="instrument-chip">${emoji} ${name}</span>`;
+    }).join('');
+
     instrumentsRow.innerHTML = `
       <span class="detail-label">Instruments</span>
-      <span class="detail-value">${instruments.join(', ')}</span>
+      <span class="detail-value detail-instruments">${instrumentsHtml}</span>
     `;
     detailsContainer.insertBefore(instrumentsRow, insertBeforeEl);
   }
 
-  // Created date row
+  // 3. Created date row
   const dateRow = document.createElement('div');
   dateRow.className = 'detail-row modal-dynamic-row';
   dateRow.innerHTML = `
@@ -1074,6 +1165,7 @@ async function generateRaga(ragaId) {
         ragaName: state.currentRaga.name,
         ragaId: ragaId,
         instruments: instruments,
+        genre: genre,
         referenceAudioUrl: referenceAudioUrl,
         midiFileUrl: midiFileUrl,
       }),
@@ -1138,6 +1230,7 @@ async function generateRaga(ragaId) {
                 ragaName: state.currentRaga.name,
                 ragaId: ragaId,
                 instruments: instruments,
+                genre: genre,
                 referenceAudioUrl: referenceAudioUrl,
                 midiFileUrl: midiFileUrl,
                 originalAudioUrl: generatedTrackUrl,

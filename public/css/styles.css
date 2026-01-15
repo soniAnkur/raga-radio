@@ -1582,21 +1582,6 @@ body {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2), 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-.track-item.authentic-track {
-  position: relative;
-}
-
-.track-item.authentic-track::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: var(--space-md);
-  bottom: var(--space-md);
-  width: 3px;
-  background: var(--success);
-  border-radius: var(--radius-full);
-}
-
 .track-artwork {
   width: 52px;
   height: 52px;
@@ -1636,28 +1621,10 @@ body {
 .track-subtitle {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
-}
-
-.track-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin-top: var(--space-xs);
-}
-
-.meta-tag {
-  font-size: var(--font-size-xs);
-  padding: 3px 10px;
-  border-radius: var(--radius-full);
-  background: var(--glass-white-subtle);
-  border: 1px solid var(--glass-border);
-  color: var(--text-secondary);
-}
-
-.meta-tag.authentic-tag {
-  color: var(--success);
-  border-color: rgba(34, 197, 94, 0.3);
-  background: rgba(34, 197, 94, 0.1);
+  align-items: center;
+  gap: 4px;
+  line-height: 1.4;
 }
 
 .track-actions {
@@ -1705,6 +1672,54 @@ body {
 
 .detail-link:hover {
   text-decoration: underline;
+}
+
+/* Enhanced detail view styles */
+.detail-genre {
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.detail-row-instruments .detail-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.instrument-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: var(--glass-white-subtle);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.instrument-chip:hover {
+  background: var(--glass-white);
+  border-color: var(--accent);
+}
+
+.detail-moods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mood-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  color: var(--accent);
+  font-weight: 500;
 }
 
 /* Track Share Button */
