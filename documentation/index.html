@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raga Radio - End-to-End Flow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .nav {
+            background: #f8f9fa;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .nav-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.8em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .flow-diagram {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 2px solid #e9ecef;
+        }
+
+        .flow-step {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .flow-step:hover {
+            transform: translateX(10px);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+        }
+
+        .flow-step h4 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .arrow {
+            text-align: center;
+            color: #667eea;
+            font-size: 2em;
+            margin: 10px 0;
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .code-block .keyword { color: #569cd6; }
+        .code-block .string { color: #ce9178; }
+        .code-block .comment { color: #6a9955; }
+        .code-block .function { color: #dcdcaa; }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+            margin: 30px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 30px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -42px;
+            top: 0;
+            width: 16px;
+            height: 16px;
+            background: #667eea;
+            border: 4px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px #667eea;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 5px 5px 5px 0;
+        }
+
+        .badge.ai { background: #2196F3; }
+        .badge.api { background: #ff9800; }
+        .badge.storage { background: #4caf50; }
+        .badge.audio { background: #e91e63; }
+
+        footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 2px solid #e9ecef;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            .nav {
+                flex-direction: column;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Raga Radio</h1>
+            <p>End-to-End Flow Documentation</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">AI-Powered Indian Classical Music Generator</p>
+        </header>
+
+        <nav class="nav">
+            <button class="nav-btn active" onclick="showSection('overview')">Overview</button>
+            <button class="nav-btn" onclick="showSection('user-journey')">User Journey</button>
+            <button class="nav-btn" onclick="showSection('quick-mode')">Quick Mode</button>
+            <button class="nav-btn" onclick="showSection('authentic-mode')">Authentic Mode</button>
+            <button class="nav-btn" onclick="showSection('ai-integration')">AI Integration</button>
+            <button class="nav-btn" onclick="showSection('external-services')">External Services</button>
+            <button class="nav-btn" onclick="showSection('data-flow')">Data Flow</button>
+            <button class="nav-btn" onclick="showSection('components')">Components</button>
+        </nav>
+
+        <div class="content">
+            <!-- OVERVIEW SECTION -->
+            <section id="overview" class="section active">
+                <h2>System Overview</h2>
+
+                <div class="info-box">
+                    <h4>What is Raga Radio?</h4>
+                    <p>Raga Radio is a full-stack AI-powered music generation platform that transforms traditional Indian classical ragas into modern synthesized music across multiple genres. It combines algorithmic melody generation, AI-enhanced composition, and professional music synthesis.</p>
+                </div>
+
+                <h3>Technology Stack</h3>
+                <div class="grid">
+                    <div class="card">
+                        <h4>Frontend</h4>
+                        <span class="badge">Vanilla JavaScript</span>
+                        <span class="badge">HTML5</span>
+                        <span class="badge">CSS3</span>
+                        <span class="badge">SwiftUI (iOS)</span>
+                        <p style="margin-top: 10px;">Responsive web app with native iOS wrapper</p>
+                    </div>
+                    <div class="card">
+                        <h4>Backend</h4>
+                        <span class="badge">Node.js</span>
+                        <span class="badge">Express.js</span>
+                        <span class="badge">ES Modules</span>
+                        <p style="margin-top: 10px;">RESTful API with serverless support</p>
+                    </div>
+                    <div class="card">
+                        <h4>AI Services</h4>
+                        <span class="badge ai">OpenAI GPT-4</span>
+                        <span class="badge ai">Suno AI</span>
+                        <p style="margin-top: 10px;">Melody generation & music synthesis</p>
+                    </div>
+                    <div class="card">
+                        <h4>Storage</h4>
+                        <span class="badge storage">Cloudflare R2</span>
+                        <span class="badge storage">S3-Compatible</span>
+                        <p style="margin-top: 10px;">Distributed object storage with CDN</p>
+                    </div>
+                </div>
+
+                <h3>High-Level Architecture</h3>
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <h4>1. User Interface (Web/iOS)</h4>
+                        <p>Browse 68+ ragas by time, mood, or all. Select generation mode and parameters.</p>
+                        <span class="badge">Vanilla JS</span>
+                        <span class="badge">SwiftUI</span>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">
+                        <h4>2. Express.js Backend</h4>
+                        <p>RESTful API handles requests, orchestrates generation pipeline.</p>
+                        <span class="badge api">REST API</span>
+                        <span class="badge">Node.js</span>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">
+                        <h4>3. Melody Generation</h4>
+                        <p>AI (OpenAI) or Algorithmic generator creates note sequences.</p>
+                        <span class="badge ai">OpenAI</span>
+                        <span class="badge">Algorithmic</span>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">
+                        <h4>4. MIDI & WAV Creation</h4>
+                        <p>Convert note events to MIDI and synthesize WAV reference audio.</p>
+                        <span class="badge audio">MIDI</span>
+                        <span class="badge audio">WAV</span>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">
+                        <h4>5. Cloudflare R2 Upload</h4>
+                        <p>Store MIDI and WAV files, generate public URLs.</p>
+                        <span class="badge storage">R2 Storage</span>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">
+                        <h4>6. Suno AI Synthesis</h4>
+                        <p>Professional music generation from reference audio or prompt.</p>
+                        <span class="badge ai">Suno API</span>
+                        <span class="badge audio">Music Synthesis</span>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">
+                        <h4>7. Download & Storage</h4>
+                        <p>Retrieve MP3, upload to R2, save metadata.</p>
+                        <span class="badge storage">MP3 Storage</span>
+                        <span class="badge">Metadata</span>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">
+                        <h4>8. Playback & Library</h4>
+                        <p>Stream audio with waveform visualization, manage library.</p>
+                        <span class="badge">Web Audio API</span>
+                        <span class="badge">Visualizer</span>
+                    </div>
+                </div>
+
+                <h3>Key Features</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Description</th>
+                            <th>Technology</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>68+ Ragas</strong></td>
+                            <td>Complete database with swara notation, time, mood</td>
+                            <td>JavaScript Objects</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AI Melody Generation</strong></td>
+                            <td>OpenAI GPT-4 creates structured Alap-Jor-Jhala</td>
+                            <td>OpenAI API</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Multi-Genre</strong></td>
+                            <td>Adapt ragas to Electronic, Metal, Jazz, Lo-fi, etc.</td>
+                            <td>Genre System</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MIDI References</strong></td>
+                            <td>Exact note sequences for educational use</td>
+                            <td>midi-writer-js</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Precise Synthesis</strong></td>
+                            <td>Suno re-synthesizes from WAV reference</td>
+                            <td>Suno Upload-Cover</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cloud Storage</strong></td>
+                            <td>Distributed storage with CDN delivery</td>
+                            <td>Cloudflare R2</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- USER JOURNEY SECTION -->
+            <section id="user-journey" class="section">
+                <h2>Complete User Journey</h2>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>1. Open Application</h4>
+                        <p>User opens Raga Radio on web browser or iOS app</p>
+                        <div class="code-block">
+<span class="comment">// Web: https://ragaradio.vercel.app</span>
+<span class="comment">// iOS: Native SwiftUI wrapper with WebView</span>
+<span class="comment">// Localhost: http://localhost:8888</span>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>2. Browse Ragas</h4>
+                        <p>Frontend loads and displays ragas from backend API</p>
+                        <div class="code-block">
+<span class="keyword">GET</span> <span class="string">/api/ragas</span>
+
+<span class="comment">// Returns 68+ ragas with:</span>
+- Name, Thaat, Scale (Indian & Western)
+- Time of day, Mood tags
+- Aaroha/Avaroha patterns
+- Vadi/Samvadi notes
+                        </div>
+                        <p style="margin-top: 10px;"><strong>Filter Options:</strong></p>
+                        <span class="badge">By Time</span>
+                        <span class="badge">By Mood</span>
+                        <span class="badge">View All</span>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>3. Select Raga</h4>
+                        <p>User clicks on raga card, modal opens with details</p>
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li><strong>Details Tab:</strong> Raga theory, scale, mood, description</li>
+                            <li><strong>Generate Tab:</strong> Generation controls and parameters</li>
+                        </ul>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>4. Choose Generation Mode</h4>
+                        <div class="grid">
+                            <div class="card">
+                                <h4>Quick Mode</h4>
+                                <span class="badge">Fast</span>
+                                <span class="badge">Simple</span>
+                                <p style="margin-top: 10px;">
+                                    • Template-based prompt<br>
+                                    • No reference audio<br>
+                                    • ~2-3 minutes<br>
+                                    • Good for exploration
+                                </p>
+                            </div>
+                            <div class="card">
+                                <h4>Authentic Mode</h4>
+                                <span class="badge ai">AI Enhanced</span>
+                                <span class="badge audio">MIDI/WAV</span>
+                                <p style="margin-top: 10px;">
+                                    • AI melody generation<br>
+                                    • MIDI + WAV reference<br>
+                                    • ~3-5 minutes<br>
+                                    • High fidelity
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>5. Configure Parameters</h4>
+                        <table>
+                            <tr>
+                                <td><strong>Genre</strong></td>
+                                <td>Classical, Electronic, Metal, Jazz, Lo-fi, etc.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Instruments</strong></td>
+                                <td>Sitar, Tabla, Tanpura, Synth Pad, etc. (25+ options)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Duration</strong></td>
+                                <td>15-120 seconds (slider)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>AI Prompt</strong></td>
+                                <td>Enable/disable AI-generated prompts</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>6. Click Generate</h4>
+                        <p>Frontend sends POST request to backend API</p>
+                        <div class="code-block">
+<span class="comment">// Quick Mode</span>
+<span class="keyword">POST</span> <span class="string">/api/generate/:id</span>
+{ instruments: [<span class="string">'sitar'</span>, <span class="string">'tabla'</span>] }
+
+<span class="comment">// Authentic Mode</span>
+<span class="keyword">POST</span> <span class="string">/api/generate/:id/authentic</span>
+{
+  instruments: [<span class="string">'sitar'</span>, <span class="string">'tabla'</span>],
+  duration: <span class="keyword">60</span>,
+  genre: <span class="string">'indianClassical'</span>,
+  useAIPrompt: <span class="keyword">true</span>
+}
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>7. Real-time Progress Updates</h4>
+                        <p>Frontend displays step-by-step status</p>
+                        <div class="success-box">
+                            <strong>Progress Steps:</strong><br>
+                            ✓ Generating melody... (45 notes created)<br>
+                            ✓ Building audio reference...<br>
+                            ✓ Uploading to cloud...<br>
+                            ✓ AI synthesis in progress... (30s)<br>
+                            ✓ Downloading track...<br>
+                            ✓ Saving to library...<br>
+                            ✓ Complete!
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>8. Track Added to Library</h4>
+                        <p>New track appears in "My Library" section</p>
+                        <span class="badge">Play</span>
+                        <span class="badge">Share</span>
+                        <span class="badge">Download MIDI</span>
+                        <span class="badge">Download WAV</span>
+                        <span class="badge">Download MP3</span>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>9. Playback & Visualization</h4>
+                        <p>Click play to start audio with waveform visualizer</p>
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li>Mini player with progress bar</li>
+                            <li>Waveform visualization (Web Audio API)</li>
+                            <li>Full-screen player option</li>
+                            <li>Next/Previous track navigation</li>
+                        </ul>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>10. Optional: Add Background Music</h4>
+                        <p>Remix feature adds atmospheric layers</p>
+                        <div class="code-block">
+<span class="keyword">POST</span> <span class="string">/api/remix/:ragaId</span>
+{
+  audioUrl: <span class="string">'https://r2.dev/raga_yaman.mp3'</span>,
+  genre: <span class="string">'atmospheric'</span>
+}
+
+<span class="comment">// Suno adds reverb, pads, ambient textures</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- QUICK MODE SECTION -->
+            <section id="quick-mode" class="section">
+                <h2>Quick Mode: Detailed Flow</h2>
+
+                <div class="info-box">
+                    <h4>When to Use Quick Mode?</h4>
+                    <p>Quick mode is ideal for rapid creative exploration, experimenting with different genres, and when you don't need precise note-by-note fidelity. It relies on Suno's interpretation of the prompt.</p>
+                </div>
+
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <h4>Step 1: User Clicks Generate (Quick Mode)</h4>
+                        <div class="code-block">
+<span class="comment">// Frontend: public/js/app.js</span>
+<span class="keyword">const</span> response = <span class="keyword">await</span> <span class="function">fetch</span>(<span class="string">`/api/generate/${ragaId}`</span>, {
+  method: <span class="string">'POST'</span>,
+  headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
+  body: <span class="function">JSON.stringify</span>({ instruments })
+});
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 2: Backend Receives Request</h4>
+                        <div class="code-block">
+<span class="comment">// Backend: src/server.js (line 220)</span>
+app.<span class="function">post</span>(<span class="string">'/api/generate/:id'</span>, <span class="keyword">async</span> (req, res) => {
+  <span class="keyword">const</span> raga = <span class="function">getRaga</span>(req.params.id);
+  <span class="keyword">const</span> { instruments } = req.body;
+
+  <span class="comment">// No melody generation, skip to prompt</span>
+});
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 3: Build Template-Based Prompt</h4>
+                        <div class="code-block">
+<span class="comment">// src/services/promptBuilder.js</span>
+<span class="keyword">function</span> <span class="function">buildPayload</span>(raga) {
+  <span class="keyword">return</span> {
+    title: <span class="string">`Raga ${raga.name}`</span>,
+
+    <span class="comment">// Style string with genre tags</span>
+    style: <span class="string">`Indian Classical, Hindustani,
+           ${raga.mood.join(', ')},
+           ${raga.time}, sitar, tabla`</span>,
+
+    <span class="comment">// Detailed prompt with scale info</span>
+    prompt: <span class="string">`Hindustani classical instrumental,
+            Raga ${raga.name}, ${raga.thaat} thaat.
+            Scale: ${raga.westernNotes.join(' ')}.
+            Vadi: ${raga.vadi}, Samvadi: ${raga.samvadi}.`</span>
+  };
+}
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 4: Submit to Suno API</h4>
+                        <div class="code-block">
+<span class="comment">// src/services/sunoApi.js</span>
+<span class="keyword">async function</span> <span class="function">generateMusic</span>(payload) {
+  <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="function">fetch</span>(<span class="string">'https://kie.ai/api/v1/generate'</span>, {
+    method: <span class="string">'POST'</span>,
+    headers: {
+      <span class="string">'x-api-key'</span>: SUNO_API_KEY,
+      <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span>
+    },
+    body: <span class="function">JSON.stringify</span>({
+      title: payload.title,
+      prompt: payload.prompt,
+      style: payload.style,
+      negativeTags: <span class="string">'vocals, lyrics, electronic drums'</span>
+    })
+  });
+
+  <span class="keyword">return</span> data.taskId;
+}
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 5: Return Task ID to Frontend</h4>
+                        <div class="code-block">
+res.<span class="function">json</span>({
+  success: <span class="keyword">true</span>,
+  taskId: <span class="string">'abc-123-def'</span>,
+  message: <span class="string">'Generation started'</span>,
+  raga: <span class="string">'Yaman'</span>
+});
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 6: Frontend Polls for Completion</h4>
+                        <div class="code-block">
+<span class="comment">// Poll every 10 seconds, max 60 attempts (10 minutes)</span>
+<span class="keyword">let</span> attempts = <span class="keyword">0</span>;
+<span class="keyword">while</span> (attempts < <span class="keyword">60</span>) {
+  attempts++;
+  <span class="keyword">await</span> <span class="function">sleep</span>(<span class="keyword">10000</span>);
+
+  <span class="keyword">const</span> status = <span class="keyword">await</span> <span class="function">fetch</span>(<span class="string">`/api/status/${taskId}`</span>);
+
+  <span class="keyword">if</span> (status === <span class="string">'SUCCESS'</span>) {
+    <span class="keyword">break</span>; <span class="comment">// Ready to download!</span>
+  }
+}
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 7: Download Generated MP3</h4>
+                        <div class="code-block">
+<span class="keyword">POST</span> <span class="string">/api/download/:taskId</span>
+{
+  ragaName: <span class="string">'Yaman'</span>,
+  ragaId: <span class="string">'yaman'</span>,
+  instruments: [<span class="string">'sitar'</span>, <span class="string">'tabla'</span>]
+}
+
+<span class="comment">// Backend downloads MP3 from Suno</span>
+<span class="comment">// Uploads to R2 (if configured)</span>
+<span class="comment">// Saves metadata to tracks-metadata.json</span>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 8: Display in Library</h4>
+                        <p>Track appears in "My Library" with play/share/download options</p>
+                        <span class="badge">Total Time: ~2-3 minutes</span>
+                    </div>
+                </div>
+
+                <h3>Quick Mode Characteristics</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Speed</strong></td>
+                            <td>~2-3 minutes total</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Accuracy</strong></td>
+                            <td>Good (Suno interprets prompt)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AI Usage</strong></td>
+                            <td>None (template-based)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Files Generated</strong></td>
+                            <td>MP3 only</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Best For</strong></td>
+                            <td>Creative exploration, quick previews</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- AUTHENTIC MODE SECTION -->
+            <section id="authentic-mode" class="section">
+                <h2>Authentic Mode: Detailed Flow</h2>
+
+                <div class="success-box">
+                    <h4>When to Use Authentic Mode?</h4>
+                    <p>Authentic mode provides precise note-by-note fidelity to raga rules. Use it when you need educational accuracy, exact MIDI sequences, or high-quality genre adaptations. The AI ensures proper Alap-Jor-Jhala structure.</p>
+                </div>
+
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <h4>Step 1: User Configures & Clicks Generate</h4>
+                        <div class="code-block">
+<span class="keyword">POST</span> <span class="string">/api/generate/:id/authentic</span>
+{
+  instruments: [<span class="string">'sitar'</span>, <span class="string">'tabla'</span>, <span class="string">'tanpura'</span>],
+  duration: <span class="keyword">60</span>,                <span class="comment">// 60 seconds</span>
+  genre: <span class="string">'indianClassical'</span>,
+  useAIPrompt: <span class="keyword">true</span>
+}
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 2: AI Melody Generation (Primary Path)</h4>
+                        <div class="code-block">
+<span class="comment">// src/services/aiMelodyGenerator.js</span>
+<span class="keyword">class</span> AIMelodyGenerator {
+  <span class="keyword">async</span> <span class="function">generate</span>() {
+    <span class="comment">// System prompt with complete raga theory</span>
+    <span class="keyword">const</span> systemPrompt = <span class="string">`You are an expert in Hindustani classical music.
+    Generate a structured Alap-Jor-Jhala composition for Raga ${raga.name}.
+
+    PHASE 1: ALAP (35% - ~21 seconds)
+    - Slow, meditative, free-flowing
+    - Long note durations: 2-4 seconds
+    - Emphasize VADI (${raga.vadi}) heavily
+    - Include MEEND (glides) between notes
+
+    PHASE 2: JOR (35% - ~21 seconds)
+    - Medium tempo, rhythmic pulse
+    - Note durations: 0.5-2 seconds
+    - Introduce rhythmic patterns
+
+    PHASE 3: JHALA (30% - ~18 seconds)
+    - Fast tempo, climactic
+    - Short notes: 0.2-0.8 seconds
+    - Rapid ornamentations
+
+    Output JSON array of note events.`</span>;
+
+    <span class="keyword">const</span> response = <span class="keyword">await</span> openai.chat.completions.<span class="function">create</span>({
+      model: <span class="string">'gpt-4'</span>,
+      messages: [
+        { role: <span class="string">'system'</span>, content: systemPrompt },
+        { role: <span class="string">'user'</span>, content: <span class="string">'Generate composition'</span> }
+      ],
+      response_format: { type: <span class="string">'json_object'</span> }
+    });
+
+    <span class="keyword">return</span> <span class="function">parseEvents</span>(response);
+  }
+}
+                        </div>
+                        <div class="warning-box">
+                            <strong>Fallback:</strong> If OpenAI fails, switches to AlapGenerator (algorithmic)
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 3: Convert to MIDI File</h4>
+                        <div class="code-block">
+<span class="comment">// src/generators/midiBuilder.js</span>
+<span class="keyword">function</span> <span class="function">buildMidi</span>(events, options) {
+  <span class="keyword">const</span> track = <span class="keyword">new</span> MidiWriter.<span class="function">Track</span>();
+
+  <span class="comment">// Set tempo (45 BPM for Alap)</span>
+  track.<span class="function">setTempo</span>(<span class="keyword">45</span>);
+
+  <span class="comment">// Set instrument (GM Sitar = 104)</span>
+  track.<span class="function">addEvent</span>(<span class="keyword">new</span> MidiWriter.<span class="function">ProgramChangeEvent</span>({
+    instrument: <span class="keyword">104</span>
+  }));
+
+  <span class="comment">// Add note events</span>
+  events.<span class="function">forEach</span>(event => {
+    track.<span class="function">addEvent</span>(<span class="keyword">new</span> MidiWriter.<span class="function">NoteEvent</span>({
+      pitch: [event.midiNote],     <span class="comment">// e.g., 60 (C4)</span>
+      duration: <span class="function">toTicks</span>(event.duration),
+      velocity: event.velocity || <span class="keyword">80</span>
+    }));
+  });
+
+  <span class="keyword">const</span> write = <span class="keyword">new</span> MidiWriter.<span class="function">Writer</span>(track);
+  <span class="keyword">return</span> write.<span class="function">buildFile</span>(); <span class="comment">// Uint8Array</span>
+}
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 4: Synthesize WAV Reference Audio</h4>
+                        <div class="code-block">
+<span class="comment">// src/services/synthesizer.js</span>
+<span class="keyword">class</span> Synthesizer {
+  <span class="function">renderToWav</span>(events) {
+    <span class="keyword">const</span> sampleRate = <span class="keyword">44100</span>;
+    <span class="keyword">const</span> samples = [];
+
+    events.<span class="function">forEach</span>(event => {
+      <span class="keyword">const</span> freq = <span class="function">midiToFrequency</span>(event.midiNote);
+      <span class="keyword">const</span> duration = event.duration;
+
+      <span class="comment">// Generate sine wave at exact frequency</span>
+      <span class="keyword">for</span> (<span class="keyword">let</span> t = <span class="keyword">0</span>; t < duration * sampleRate; t++) {
+        <span class="keyword">const</span> sample = Math.<span class="function">sin</span>(<span class="keyword">2</span> * Math.PI * freq * t / sampleRate);
+
+        <span class="comment">// Apply envelope (attack/release)</span>
+        <span class="keyword">const</span> envelope = <span class="keyword">this</span>.<span class="function">applyEnvelope</span>(t, duration, sampleRate);
+        samples.<span class="function">push</span>(sample * <span class="keyword">0.5</span> * envelope);
+      }
+    });
+
+    <span class="keyword">return</span> <span class="keyword">this</span>.<span class="function">writePCM</span>(samples, sampleRate); <span class="comment">// WAV buffer</span>
+  }
+}
+                        </div>
+                        <div class="info-box">
+                            <strong>Why Sine Waves?</strong> Suno will re-synthesize with proper instruments. We only need pitch-accurate reference, and sine waves are simplest and most reliable.
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 5: Upload to Cloudflare R2</h4>
+                        <div class="code-block">
+<span class="comment">// src/services/cloudflare-r2.js</span>
+<span class="keyword">const</span> midiUrl = <span class="keyword">await</span> <span class="function">uploadBufferToR2</span>(
+  midiBuffer,
+  <span class="string">'melody_yaman_abc123.mid'</span>,
+  <span class="string">'audio/midi'</span>
+);
+
+<span class="keyword">const</span> wavUrl = <span class="keyword">await</span> <span class="function">uploadBufferToR2</span>(
+  wavBuffer,
+  <span class="string">'melody_yaman_abc123.wav'</span>,
+  <span class="string">'audio/wav'</span>
+);
+
+<span class="comment">// Public URLs generated</span>
+<span class="comment">// https://pub-xxxxx.r2.dev/raga-radio/melody_yaman_abc123.mid</span>
+<span class="comment">// https://pub-xxxxx.r2.dev/raga-radio/melody_yaman_abc123.wav</span>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 6: AI Prompt Generation (Optional)</h4>
+                        <div class="code-block">
+<span class="comment">// If useAIPrompt === true</span>
+<span class="keyword">const</span> aiPrompt = <span class="keyword">await</span> openai.chat.completions.<span class="function">create</span>({
+  model: <span class="string">'gpt-4'</span>,
+  messages: [{
+    role: <span class="string">'system'</span>,
+    content: <span class="string">`Generate creative Suno AI prompt for:
+    Raga: ${raga.name}
+    Genre: ${genre}
+    Instruments: ${instruments.join(', ')}
+
+    Output JSON with:
+    - prompt (max 500 chars)
+    - style (4-7 tags, max 200 chars)
+    - negativeTags (what to avoid)`</span>
+  }]
+});
+
+<span class="comment">// Example output:</span>
+{
+  prompt: <span class="string">"Moonlit meditation in Raga Yaman..."</span>,
+  style: <span class="string">"Hindustani classical, atmospheric, sitar-driven"</span>,
+  negativeTags: <span class="string">"electronic drums, harsh vocals"</span>
+}
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 7: Submit to Suno Upload-Cover API</h4>
+                        <div class="code-block">
+<span class="keyword">POST</span> <span class="string">https://kie.ai/api/v1/generate_from_upload</span>
+{
+  uploadUrl: <span class="string">"https://pub-xxx.r2.dev/melody_yaman.wav"</span>,
+  prompt: aiPrompt.prompt || templatePrompt,
+  style: aiPrompt.style || templateStyle,
+  negativeTags: aiPrompt.negativeTags,
+  title: <span class="string">"Raga Yaman - Peaceful Evening"</span>
+}
+
+<span class="comment">// Suno API:</span>
+<span class="comment">// 1. Downloads WAV from R2</span>
+<span class="comment">// 2. Analyzes pitch contour</span>
+<span class="comment">// 3. Re-synthesizes with selected instruments</span>
+<span class="comment">// 4. Applies genre-specific production</span>
+<span class="comment">// 5. Returns task ID for polling</span>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 8: Poll for Completion</h4>
+                        <p>Same polling mechanism as Quick Mode (10-second intervals, 60 max attempts)</p>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 9: Download & Store MP3</h4>
+                        <div class="code-block">
+<span class="comment">// Backend downloads MP3 from Suno</span>
+<span class="comment">// Uploads to R2</span>
+<span class="comment">// Updates tracks-metadata.json with:</span>
+{
+  filename: <span class="string">"raga_yaman_p2_1705427000_1.mp3"</span>,
+  url: <span class="string">"https://pub-xxx.r2.dev/..."</span>,
+  ragaName: <span class="string">"Yaman"</span>,
+  ragaId: <span class="string">"yaman"</span>,
+  genre: <span class="string">"indianClassical"</span>,
+  instruments: [<span class="string">"sitar"</span>, <span class="string">"tabla"</span>],
+  midiFileUrl: <span class="string">"https://pub-xxx.r2.dev/melody_yaman.mid"</span>,
+  referenceAudioUrl: <span class="string">"https://pub-xxx.r2.dev/melody_yaman.wav"</span>,
+  createdAt: <span class="string">"2025-01-14T22:30:45.123Z"</span>,
+  duration: <span class="keyword">60</span>
+}
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <h4>Step 10: Display in Library with All Artifacts</h4>
+                        <p>Track appears with download links for:</p>
+                        <span class="badge audio">MIDI File</span>
+                        <span class="badge audio">WAV Reference</span>
+                        <span class="badge audio">MP3 Track</span>
+                        <p style="margin-top: 10px;"><strong>Total Time: ~3-5 minutes</strong></p>
+                    </div>
+                </div>
+
+                <h3>Authentic Mode Characteristics</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Speed</strong></td>
+                            <td>~3-5 minutes total</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Accuracy</strong></td>
+                            <td>High (exact note sequences)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AI Usage</strong></td>
+                            <td>OpenAI for melody + prompts (0-2 API calls)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Files Generated</strong></td>
+                            <td>MIDI, WAV, MP3</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Best For</strong></td>
+                            <td>Educational use, precise compositions, archival</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cost</strong></td>
+                            <td>~$0.003 per track (OpenAI GPT-3.5)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- AI INTEGRATION SECTION -->
+            <section id="ai-integration" class="section">
+                <h2>AI & LLM Integration</h2>
+
+                <h3>1. OpenAI GPT for Melody Generation</h3>
+                <div class="card">
+                    <h4>File: src/services/aiMelodyGenerator.js</h4>
+                    <span class="badge ai">OpenAI API</span>
+                    <span class="badge">GPT-4</span>
+                    <span class="badge">GPT-3.5-turbo</span>
+
+                    <div class="code-block" style="margin-top: 15px;">
+<span class="keyword">class</span> AIMelodyGenerator {
+  <span class="keyword">constructor</span>(raga, options) {
+    <span class="keyword">this</span>.raga = raga;
+    <span class="keyword">this</span>.duration = options.duration;
+    <span class="keyword">this</span>.tonic = options.tonic || <span class="string">'C'</span>;
+  }
+
+  <span class="keyword">async</span> <span class="function">generate</span>() {
+    <span class="keyword">const</span> systemPrompt = <span class="keyword">this</span>.<span class="function">buildSystemPrompt</span>();
+
+    <span class="keyword">const</span> response = <span class="keyword">await</span> openai.chat.completions.<span class="function">create</span>({
+      model: process.env.OPENAI_MODEL || <span class="string">'gpt-4'</span>,
+      messages: [
+        { role: <span class="string">'system'</span>, content: systemPrompt },
+        { role: <span class="string">'user'</span>, content: <span class="string">'Generate Alap-Jor-Jhala'</span> }
+      ],
+      response_format: { type: <span class="string">'json_object'</span> },
+      temperature: <span class="keyword">0.7</span>
+    });
+
+    <span class="keyword">return</span> <span class="keyword">this</span>.<span class="function">parseAIResponse</span>(response);
+  }
+
+  <span class="function">buildSystemPrompt</span>() {
+    <span class="keyword">return</span> <span class="string">`You are an expert in Hindustani classical music...
+
+    RAGA: ${this.raga.name}
+    THAAT: ${this.raga.thaat}
+    AAROHA: ${this.raga.aaroha}
+    AVAROHA: ${this.raga.avaroha}
+    VADI: ${this.raga.vadi}
+    SAMVADI: ${this.raga.samvadi}
+
+    SWARA MAPPINGS:
+    ${this.getSwaraMappings()}
+
+    PHASE 1: ALAP (35% of ${this.duration}s)
+    - Slow, meditative, free-flowing
+    - NO rhythm, pure melody exploration
+    - Long note durations: 2-4 seconds
+    - Heavy emphasis on VADI (${this.raga.vadi})
+    - Include MEEND (glides) between notes
+
+    PHASE 2: JOR (35%)
+    - Medium tempo, rhythmic pulse
+    - Note durations: 0.5-2 seconds
+    - Introduce subtle rhythmic patterns
+
+    PHASE 3: JHALA (30%)
+    - Fast tempo, climactic
+    - Short notes: 0.2-0.8 seconds
+    - Rapid ornamentations (gamak)
+    - Build to peak intensity
+
+    OUTPUT JSON:
+    {
+      "events": [
+        {
+          "swara": "S",
+          "octave": 0,
+          "duration": 3.0,
+          "ornament": "meend" | "gamak" | null,
+          "emphasis": "vadi" | "samvadi" | null
+        }
+      ]
+    }`</span>;
+  }
+}
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">2. OpenAI GPT for Prompt Generation</h3>
+                <div class="card">
+                    <h4>File: src/services/aiPromptGenerator.js</h4>
+                    <span class="badge ai">OpenAI API</span>
+                    <span class="badge">Creative Writing</span>
+
+                    <div class="code-block" style="margin-top: 15px;">
+<span class="keyword">async function</span> <span class="function">generatePrompt</span>(raga, genre, instruments) {
+  <span class="keyword">const</span> systemPrompt = <span class="string">`You are a creative music prompt writer...
+
+  SUNO AI BEST PRACTICES:
+  - Prompt: Max 500 characters, vivid imagery
+  - Style: 4-7 descriptors, comma-separated, max 200 chars
+  - Negative Tags: What to avoid, max 200 chars
+
+  CURRENT GENERATION:
+  Raga: ${raga.name}
+  Genre: ${genre.name}
+  Instruments: ${instruments.join(', ')}
+  Mood: ${raga.mood.join(', ')}
+  Time: ${raga.time}
+
+  Create evocative, genre-appropriate prompt.`</span>;
+
+  <span class="keyword">const</span> response = <span class="keyword">await</span> openai.chat.completions.<span class="function">create</span>({
+    model: <span class="string">'gpt-4'</span>,
+    messages: [
+      { role: <span class="string">'system'</span>, content: systemPrompt },
+      { role: <span class="string">'user'</span>, content: <span class="string">'Generate Suno prompt'</span> }
+    ],
+    response_format: { type: <span class="string">'json_object'</span> }
+  });
+
+  <span class="keyword">return</span> {
+    prompt: response.prompt,
+    style: response.style,
+    negativeTags: response.negativeTags
+  };
+}
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">AI Usage Summary</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Provider</th>
+                            <th>Model</th>
+                            <th>When Used</th>
+                            <th>Cost/Track</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Melody Generation</strong></td>
+                            <td>OpenAI</td>
+                            <td>GPT-4 / GPT-3.5</td>
+                            <td>Authentic Mode</td>
+                            <td>~$0.002</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Prompt Generation</strong></td>
+                            <td>OpenAI</td>
+                            <td>GPT-4 / GPT-3.5</td>
+                            <td>When useAIPrompt=true</td>
+                            <td>~$0.001</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Music Synthesis</strong></td>
+                            <td>Suno AI</td>
+                            <td>Proprietary</td>
+                            <td>All modes</td>
+                            <td>Varies</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="warning-box">
+                    <h4>Fallback Strategy</h4>
+                    <p><strong>AI Melody Generation:</strong> If OpenAI fails → Falls back to AlapGenerator (algorithmic)</p>
+                    <p><strong>AI Prompt Generation:</strong> If OpenAI fails → Falls back to template-based prompts</p>
+                    <p><strong>Result:</strong> Pipeline never fails due to AI unavailability</p>
+                </div>
+
+                <h3 style="margin-top: 30px;">Claude AI (Future Integration)</h3>
+                <div class="info-box">
+                    <h4>Status: Infrastructure Ready, Not Active</h4>
+                    <p><strong>Environment Variable:</strong> CLAUDE_API_KEY (configured but unused)</p>
+                    <p><strong>Potential Use Cases:</strong></p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Replace OpenAI for melody generation (may be more culturally tuned)</li>
+                        <li>Cost optimization (different pricing model)</li>
+                        <li>Longer context windows for complex compositions</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- EXTERNAL SERVICES SECTION -->
+            <section id="external-services" class="section">
+                <h2>External Service Integrations</h2>
+
+                <h3>1. Suno AI (kie.ai)</h3>
+                <div class="card">
+                    <h4>Music Generation Platform</h4>
+                    <span class="badge api">REST API</span>
+                    <span class="badge">Professional Synthesis</span>
+
+                    <div style="margin-top: 15px;">
+                        <p><strong>Base URL:</strong> https://kie.ai</p>
+                        <p><strong>Authentication:</strong> x-api-key header</p>
+                    </div>
+
+                    <h4 style="margin-top: 20px;">API Endpoints</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Endpoint</th>
+                                <th>Method</th>
+                                <th>Purpose</th>
+                                <th>Used In</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>/api/v1/generate</td>
+                                <td>POST</td>
+                                <td>Text-to-music</td>
+                                <td>Quick Mode</td>
+                            </tr>
+                            <tr>
+                                <td>/api/v1/generate_from_upload</td>
+                                <td>POST</td>
+                                <td>Upload-cover (reference)</td>
+                                <td>Authentic Mode</td>
+                            </tr>
+                            <tr>
+                                <td>/api/v1/add_instrumental</td>
+                                <td>POST</td>
+                                <td>Add background music</td>
+                                <td>Remix Feature</td>
+                            </tr>
+                            <tr>
+                                <td>/api/v1/generate/record-info</td>
+                                <td>GET</td>
+                                <td>Check task status</td>
+                                <td>Polling</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-block">
+<span class="comment">// Example: Upload-Cover Request (Authentic Mode)</span>
+<span class="keyword">POST</span> <span class="string">https://kie.ai/api/v1/generate_from_upload</span>
+Headers: {
+  <span class="string">'x-api-key'</span>: <span class="string">'your_suno_key'</span>,
+  <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span>
+}
+Body: {
+  uploadUrl: <span class="string">"https://pub-xxx.r2.dev/melody_yaman.wav"</span>,
+  prompt: <span class="string">"Peaceful Raga Yaman in atmospheric style..."</span>,
+  style: <span class="string">"Hindustani classical, ambient, sitar, tabla"</span>,
+  negativeTags: <span class="string">"vocals, electronic drums, distortion"</span>,
+  title: <span class="string">"Raga Yaman - Evening Meditation"</span>
+}
+
+<span class="comment">// Response</span>
+{
+  data: {
+    taskId: <span class="string">"abc-123-def-456"</span>,
+    status: <span class="string">"PENDING"</span>
+  }
+}
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">2. Cloudflare R2</h3>
+                <div class="card">
+                    <h4>S3-Compatible Object Storage</h4>
+                    <span class="badge storage">S3 API</span>
+                    <span class="badge storage">CDN</span>
+
+                    <div style="margin-top: 15px;">
+                        <p><strong>Purpose:</strong> Store MIDI, WAV, MP3 files with public URLs</p>
+                        <p><strong>Why R2?</strong> Cost-effective, no egress fees, built-in CDN</p>
+                    </div>
+
+                    <h4 style="margin-top: 20px;">Configuration</h4>
+                    <div class="code-block">
+CLOUDFLARE_R2_ACCOUNT_ID=your_account_id
+CLOUDFLARE_R2_ACCESS_KEY_ID=your_access_key
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=your_secret_key
+CLOUDFLARE_R2_BUCKET_NAME=raga-radio
+CLOUDFLARE_R2_PUBLIC_URL=https://pub-xxxxx.r2.dev
+                    </div>
+
+                    <h4 style="margin-top: 20px;">Storage Structure</h4>
+                    <div class="code-block">
+raga-radio/
+├── melody_yaman_abc123.mid          <span class="comment">// MIDI reference</span>
+├── melody_yaman_abc123.wav          <span class="comment">// WAV reference</span>
+├── raga_yaman_p2_1705427000_1.mp3   <span class="comment">// Generated track</span>
+├── raga_bhairav_p2_1705428000_1.mp3
+└── tracks-metadata.json             <span class="comment">// Master metadata</span>
+                    </div>
+
+                    <h4 style="margin-top: 20px;">Upload Example</h4>
+                    <div class="code-block">
+<span class="keyword">import</span> { S3Client, PutObjectCommand } <span class="keyword">from</span> <span class="string">'@aws-sdk/client-s3'</span>;
+
+<span class="keyword">const</span> s3 = <span class="keyword">new</span> <span class="function">S3Client</span>({
+  region: <span class="string">'auto'</span>,
+  endpoint: <span class="string">`https://${accountId}.r2.cloudflarestorage.com`</span>,
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY
+  }
+});
+
+<span class="keyword">await</span> s3.<span class="function">send</span>(<span class="keyword">new</span> <span class="function">PutObjectCommand</span>({
+  Bucket: <span class="string">'raga-radio'</span>,
+  Key: <span class="string">'melody_yaman_abc123.wav'</span>,
+  Body: wavBuffer,
+  ContentType: <span class="string">'audio/wav'</span>
+}));
+
+<span class="keyword">const</span> publicUrl = <span class="string">`${R2_PUBLIC_URL}/raga-radio/melody_yaman_abc123.wav`</span>;
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">3. OpenAI API</h3>
+                <div class="card">
+                    <h4>LLM for Melody & Prompt Generation</h4>
+                    <span class="badge ai">GPT-4</span>
+                    <span class="badge ai">GPT-3.5-turbo</span>
+
+                    <div style="margin-top: 15px;">
+                        <p><strong>Configuration:</strong></p>
+                        <div class="code-block">
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4  <span class="comment">// or gpt-3.5-turbo</span>
+                        </div>
+                    </div>
+
+                    <h4 style="margin-top: 20px;">API Calls per Generation</h4>
+                    <table>
+                        <tr>
+                            <td><strong>Quick Mode</strong></td>
+                            <td>0 calls (uses templates)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Authentic Mode (No AI Prompt)</strong></td>
+                            <td>1 call (melody only)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Authentic Mode (With AI Prompt)</strong></td>
+                            <td>2 calls (melody + prompt)</td>
+                        </tr>
+                    </table>
+
+                    <div class="info-box" style="margin-top: 20px;">
+                        <h4>Cost Optimization</h4>
+                        <p><strong>GPT-4:</strong> Higher quality, ~$0.006 per track (2 calls)</p>
+                        <p><strong>GPT-3.5-turbo:</strong> Good quality, ~$0.0006 per track (2 calls)</p>
+                        <p><strong>Recommendation:</strong> Use GPT-3.5-turbo for development, GPT-4 for production</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DATA FLOW SECTION -->
+            <section id="data-flow" class="section">
+                <h2>Complete Data Flow</h2>
+
+                <div class="flow-diagram">
+                    <h3>From Click to Playback: Every Step</h3>
+
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <h4>T+0s: User Clicks "Generate"</h4>
+                            <p>Frontend sends POST request with raga ID and parameters</p>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+1s: Backend Receives Request</h4>
+                            <p>Express server validates raga exists, checks API keys</p>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+2-10s: AI Melody Generation (Authentic)</h4>
+                            <p>OpenAI GPT-4 generates 45-60 note events in JSON format</p>
+                            <span class="badge ai">OpenAI API Call</span>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+11s: Convert to MIDI</h4>
+                            <p>midi-writer-js creates binary MIDI file with exact note sequences</p>
+                            <span class="badge audio">MIDI Builder</span>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+12s: Synthesize WAV</h4>
+                            <p>Custom synthesizer generates sine waves at exact frequencies</p>
+                            <span class="badge audio">WAV Synthesizer</span>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+13-15s: Upload to R2</h4>
+                            <p>MIDI and WAV files uploaded, public URLs generated</p>
+                            <span class="badge storage">Cloudflare R2</span>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+16-20s: AI Prompt Generation (Optional)</h4>
+                            <p>OpenAI generates creative Suno-optimized prompt</p>
+                            <span class="badge ai">OpenAI API Call</span>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+21s: Submit to Suno</h4>
+                            <p>POST to /api/v1/generate_from_upload with WAV URL</p>
+                            <span class="badge api">Suno API</span>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+22-180s: Suno Processes (2-3 minutes)</h4>
+                            <p>Suno analyzes WAV, re-synthesizes with instruments, applies production</p>
+                            <span class="badge">Music Synthesis</span>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+22-180s: Frontend Polls Status</h4>
+                            <p>GET /api/status/:taskId every 10 seconds</p>
+                            <span class="badge">PENDING → SUCCESS</span>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+181s: Download MP3</h4>
+                            <p>Backend downloads MP3 from Suno CDN</p>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+182-185s: Upload to R2</h4>
+                            <p>MP3 uploaded to Cloudflare R2 for permanent storage</p>
+                            <span class="badge storage">R2 Upload</span>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+186s: Update Metadata</h4>
+                            <p>tracks-metadata.json updated with new track info</p>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+187s: Response to Frontend</h4>
+                            <p>Backend returns success with track URLs</p>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+188s: Display in Library</h4>
+                            <p>Track appears in "My Library" with play button</p>
+                        </div>
+
+                        <div class="timeline-item">
+                            <h4>T+189s: User Clicks Play</h4>
+                            <p>Web Audio API loads MP3, starts playback with waveform visualization</p>
+                            <span class="badge">Playback Started</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Data Transformations</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Stage</th>
+                            <th>Input</th>
+                            <th>Process</th>
+                            <th>Output</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>1. Raga Selection</strong></td>
+                            <td>User click</td>
+                            <td>Load raga object</td>
+                            <td>Raga data (aaroha, vadi, etc.)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2. AI Generation</strong></td>
+                            <td>Raga data</td>
+                            <td>OpenAI GPT-4</td>
+                            <td>JSON note events</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3. Swara Conversion</strong></td>
+                            <td>Swara notation (S R G M)</td>
+                            <td>swaraConverter.js</td>
+                            <td>MIDI note numbers (60, 62, 64...)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>4. MIDI Creation</strong></td>
+                            <td>MIDI note numbers</td>
+                            <td>midi-writer-js</td>
+                            <td>Binary .mid file</td>
+                        </tr>
+                        <tr>
+                            <td><strong>5. WAV Synthesis</strong></td>
+                            <td>MIDI note numbers</td>
+                            <td>Sine wave generator</td>
+                            <td>PCM .wav file</td>
+                        </tr>
+                        <tr>
+                            <td><strong>6. Suno Synthesis</strong></td>
+                            <td>WAV reference + prompt</td>
+                            <td>Suno AI</td>
+                            <td>Professional MP3</td>
+                        </tr>
+                        <tr>
+                            <td><strong>7. Storage</strong></td>
+                            <td>MP3 buffer</td>
+                            <td>Cloudflare R2</td>
+                            <td>Public URL</td>
+                        </tr>
+                        <tr>
+                            <td><strong>8. Playback</strong></td>
+                            <td>MP3 URL</td>
+                            <td>Web Audio API</td>
+                            <td>Audio output + waveform</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- COMPONENTS SECTION -->
+            <section id="components" class="section">
+                <h2>Key Components</h2>
+
+                <h3>Backend Components</h3>
+                <div class="grid">
+                    <div class="card">
+                        <h4>server.js</h4>
+                        <span class="badge">710 lines</span>
+                        <p style="margin-top: 10px;"><strong>Purpose:</strong> Express API server with all routes</p>
+                        <p><strong>Key Routes:</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 5px;">
+                            <li>GET /api/ragas</li>
+                            <li>POST /api/generate/:id</li>
+                            <li>POST /api/generate/:id/authentic</li>
+                            <li>GET /api/tracks</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h4>aiMelodyGenerator.js</h4>
+                        <span class="badge ai">AI</span>
+                        <p style="margin-top: 10px;"><strong>Purpose:</strong> OpenAI-powered melody generation</p>
+                        <p><strong>Output:</strong> Structured Alap-Jor-Jhala compositions</p>
+                    </div>
+
+                    <div class="card">
+                        <h4>sunoApi.js</h4>
+                        <span class="badge api">API</span>
+                        <span class="badge">400+ lines</span>
+                        <p style="margin-top: 10px;"><strong>Purpose:</strong> Suno API client</p>
+                        <p><strong>Features:</strong> Generate, upload-cover, polling, download</p>
+                    </div>
+
+                    <div class="card">
+                        <h4>midiBuilder.js</h4>
+                        <span class="badge audio">MIDI</span>
+                        <p style="margin-top: 10px;"><strong>Purpose:</strong> Create MIDI files from note events</p>
+                        <p><strong>Library:</strong> midi-writer-js</p>
+                    </div>
+
+                    <div class="card">
+                        <h4>synthesizer.js</h4>
+                        <span class="badge audio">WAV</span>
+                        <p style="margin-top: 10px;"><strong>Purpose:</strong> Render WAV audio from MIDI notes</p>
+                        <p><strong>Method:</strong> Sine wave synthesis with envelopes</p>
+                    </div>
+
+                    <div class="card">
+                        <h4>swaraConverter.js</h4>
+                        <span class="badge">Converter</span>
+                        <p style="margin-top: 10px;"><strong>Purpose:</strong> Indian ↔ Western note conversion</p>
+                        <p><strong>Maps:</strong> S R G M P D N → C D E F G A B</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">Frontend Components</h3>
+                <div class="grid">
+                    <div class="card">
+                        <h4>app.js</h4>
+                        <span class="badge">2000+ lines</span>
+                        <p style="margin-top: 10px;"><strong>Purpose:</strong> Main frontend logic</p>
+                        <p><strong>Features:</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 5px;">
+                            <li>Raga browsing & filtering</li>
+                            <li>Generation controls</li>
+                            <li>Library management</li>
+                            <li>Audio playback</li>
+                            <li>Waveform visualization</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h4>styles.css</h4>
+                        <span class="badge">1700+ lines</span>
+                        <p style="margin-top: 10px;"><strong>Purpose:</strong> Neomorphic design system</p>
+                        <p><strong>Features:</strong> Glass-morphism, soft shadows, responsive layout</p>
+                    </div>
+
+                    <div class="card">
+                        <h4>index.html</h4>
+                        <span class="badge">HTML5</span>
+                        <p style="margin-top: 10px;"><strong>Purpose:</strong> App shell and structure</p>
+                        <p><strong>Sections:</strong> Library, Time view, Mood view, All ragas</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">Data Components</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Records</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ragas.js</strong></td>
+                            <td>68+ ragas</td>
+                            <td>Complete raga database with scale, mood, time</td>
+                        </tr>
+                        <tr>
+                            <td><strong>genres.js</strong></td>
+                            <td>9 genres</td>
+                            <td>Genre definitions with instrument mappings</td>
+                        </tr>
+                        <tr>
+                            <td><strong>instruments.js</strong></td>
+                            <td>25+ instruments</td>
+                            <td>Instrument database with Suno descriptions</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 30px;">iOS App Components</h3>
+                <div class="card">
+                    <h4>ContentView.swift</h4>
+                    <span class="badge">SwiftUI</span>
+                    <p style="margin-top: 10px;"><strong>Purpose:</strong> Native iOS wrapper</p>
+                    <div class="code-block">
+<span class="keyword">struct</span> ContentView: View {
+    <span class="keyword">var</span> body: <span class="keyword">some</span> View {
+        WebView(url: URL(string: <span class="string">"https://ragaradio.vercel.app"</span>)!)
+            .<span class="function">edgesIgnoringSafeArea</span>(.all)
+    }
+}
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p><strong>Raga Radio</strong> - AI-Powered Indian Classical Music Generator</p>
+            <p style="margin-top: 10px;">Built with Node.js, Express, OpenAI, Suno AI, and Cloudflare R2</p>
+            <p style="margin-top: 5px; font-size: 0.9em;">Documentation generated: January 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
