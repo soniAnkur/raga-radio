@@ -2,7 +2,9 @@
 
 ## Live URL
 
-**Production:** https://documentation-dqbkfehnq-ankursoni948-gmailcoms-projects.vercel.app
+**Production:** https://documentation-oe3a1xaoy-ankursoni948-gmailcoms-projects.vercel.app
+
+(Once renamed in Vercel Dashboard, it will be: `https://raga-radio-architecture.vercel.app`)
 
 ## Project Information
 
