@@ -1,0 +1,14 @@
+IOSApp
+ios
+android
+.capacitor
+assets
+documentation
+test-*
+_api_old
+output
+temp
+logs
+tests
+pipeline-diagram.html
+presentation-*.html

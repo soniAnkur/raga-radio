@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raga Radio - Technical Architecture</title>
+<link rel="stylesheet" href="../_tools/design-system.css">
+<style>
+:root {
+  --ds-accent: #c17f24;
+  --ds-accent-light: #d4993a;
+  --ds-accent-bg: rgba(193,127,36,0.08);
+}
+::selection { background: var(--ds-accent); color: #fff; }
+
+/* Code blocks */
+.code-block { background: #1a1a18; border-radius: var(--ds-radius-sm); overflow: hidden; margin: 1.5rem 0; }
+.code-header { display: flex; align-items: center; gap: .5rem; padding: .6rem 1rem; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 12px; color: rgba(255,255,255,.45); font-family: var(--ds-font-mono); }
+.code-body { padding: 1rem 1.25rem; font-family: var(--ds-font-mono); font-size: 13px; line-height: 1.8; overflow-x: auto; color: rgba(255,255,255,.8); }
+.code-body .kw { color: #d4993a; }
+.code-body .fn { color: #7ec8e3; }
+.code-body .str { color: #a8d08d; }
+.code-body .cm { color: rgba(255,255,255,.3); font-style: italic; }
+.code-body .num { color: #d4993a; }
+.code-body .prop { color: #e8a87c; }
+
+/* Swara table */
+.swara-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 14px; }
+.swara-table th { text-align: left; padding: .55rem .75rem; border-bottom: 2px solid var(--ds-text); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ds-text-secondary); }
+.swara-table td { padding: .45rem .75rem; border-bottom: 1px solid rgba(0,0,0,.04); }
+.swara-table .highlight { font-weight: 600; font-family: var(--ds-font-mono); }
+.swara-table .note { font-family: var(--ds-font-mono); color: var(--ds-accent); }
+.type-tag { display: inline-block; padding: .1rem .4rem; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.type-fixed { background: #1a1a18; color: #fff; }
+.type-shuddha { background: var(--ds-accent-bg); color: var(--ds-accent); }
+.type-komal { background: #f0e8e0; color: #8a6840; }
+.type-tivra { background: #e8f0e0; color: #4a7030; }
+
+/* Schema block */
+.schema-block { border: 1px solid rgba(0,0,0,.06); border-radius: var(--ds-radius-sm); padding: 1.25rem; margin: 1rem 0; background: var(--ds-bg-alt); }
+.schema-field { display: flex; align-items: flex-start; gap: .75rem; padding: .4rem 0; border-bottom: 1px solid rgba(0,0,0,.04); }
+.schema-field:last-child { border-bottom: 0; }
+.field-name { font-family: var(--ds-font-mono); font-size: 13px; color: var(--ds-text); font-weight: 600; min-width: 100px; flex-shrink: 0; }
+.field-type { font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-accent); min-width: 60px; flex-shrink: 0; }
+.field-desc { font-size: 13px; color: var(--ds-text-secondary); }
+
+/* Genre grid */
+.genre-card .genre-name { font-weight: 600; font-size: 15px; margin-bottom: .2rem; }
+.genre-card .genre-meta { font-size: 12px; color: var(--ds-text-secondary); margin-bottom: .5rem; }
+.genre-tags { display: flex; flex-wrap: wrap; gap: .25rem; }
+.genre-tag { font-size: 11px; padding: .15rem .5rem; background: var(--ds-bg-alt); color: var(--ds-text-secondary); border-radius: 4px; }
+
+/* API routes */
+.route-list { display: flex; flex-direction: column; gap: .5rem; margin: 1.5rem 0; }
+.route { display: flex; align-items: center; gap: .75rem; padding: .6rem .75rem; border: 1px solid rgba(0,0,0,.06); border-radius: var(--ds-radius-sm); background: var(--ds-surface); }
+.route .method { font-family: var(--ds-font-mono); font-size: 11px; font-weight: 700; padding: .15rem .5rem; border-radius: 4px; min-width: 42px; text-align: center; }
+.route .method.get { background: var(--ds-accent-bg); color: var(--ds-accent); }
+.route .method.post { background: #1a1a18; color: #fff; }
+.route .path { font-family: var(--ds-font-mono); font-size: 13px; color: var(--ds-text); flex: 1; }
+.route .desc { font-size: 12px; color: var(--ds-text-secondary); }
+
+/* Stack row */
+.stack-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 2rem 0; }
+@media (max-width: 600px) { .stack-row { grid-template-columns: repeat(2, 1fr); } }
+.stack-item { text-align: center; }
+.stack-item .stack-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ds-text-secondary); margin-bottom: .2rem; }
+.stack-item .stack-val { font-weight: 600; font-size: 14px; }
+
+/* Waveform demo */
+.waveform-demo { background: var(--ds-bg-alt); border-radius: var(--ds-radius); padding: 1.5rem; text-align: center; margin: 2rem 0; }
+.wave-bars { display: flex; align-items: center; justify-content: center; gap: 2px; height: 60px; margin: .75rem 0; }
+.wave-bar { width: 3px; border-radius: 2px; background: var(--ds-text); opacity: .25; animation: wave 1.5s ease-in-out infinite alternate; }
+@keyframes wave { 0% { height: 10%; } 100% { height: 90%; } }
+
+/* Mermaid */
+.mermaid-wrap { margin: 2rem 0; border-radius: var(--ds-radius); padding: 2rem; overflow-x: auto; }
+.mermaid-wrap .caption { font-size: 11px; color: var(--ds-text-secondary); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1rem; font-weight: 600; }
+
+/* Two columns */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; }
+@media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+footer { text-align: center; padding: 3rem 2rem; color: var(--ds-text-secondary); font-size: 13px; border-top: 1px solid rgba(0,0,0,.06); }
+footer a { color: var(--ds-accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- Glass Nav -->
+<nav class="ds-nav">
+  <div class="ds-nav-title">Raga Radio <span style="color:var(--ds-text-secondary);font-weight:400;margin-left:6px">Technical</span></div>
+  <div class="ds-nav-links">
+    <a href="#architecture" class="ds-nav-link">Architecture</a>
+    <a href="#music-theory" class="ds-nav-link">Music Theory</a>
+    <a href="#pipeline" class="ds-nav-link">Pipeline</a>
+    <a href="#api" class="ds-nav-link">API</a>
+    <a href="#frontend" class="ds-nav-link">Frontend</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="ds-hero">
+  <div class="ds-hero-image">
+    <img src="assets/hero-technical.png" alt="Raga Radio Technical" onerror="this.parentElement.style.display='none'">
+  </div>
+  <div class="ds-hero-content">
+    <div class="ds-overline">Technical Architecture</div>
+    <h1 class="ds-hero-title">How Raga Radio Turns Ancient Theory Into Music</h1>
+    <p class="ds-body" style="margin-top:16px">A deep dive into the AI-powered music generation system -- from raga grammar and swara conversion to MIDI synthesis and production pipelines.</p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:24px">
+      <span class="ds-glass-pill">Node.js / Express</span>
+      <span class="ds-glass-pill">OpenAI GPT-4</span>
+      <span class="ds-glass-pill">68+ Ragas</span>
+      <span class="ds-glass-pill">MIDI / WAV / Suno</span>
+    </div>
+  </div>
+</section>
+
+<hr class="ds-divider" style="max-width:var(--ds-max-width);margin:0 auto">
+
+<!-- ARCHITECTURE OVERVIEW -->
+<section class="ds-section" id="architecture">
+  <div class="ds-container">
+    <div class="ds-overline ds-reveal">System Design</div>
+    <h2 class="ds-section-title ds-reveal">Architecture Overview</h2>
+    <p class="ds-body ds-reveal" style="color:var(--ds-text-secondary);max-width:560px;margin-bottom:2.5rem">A modular Node.js application with clear separation of concerns: data, services, generators, converters, and API layers.</p>
+
+    <div class="ds-glass-card mermaid-wrap ds-reveal">
+      <div class="caption">System Architecture</div>
+      <pre class="mermaid">
+graph LR
+  A[Express Server] --> B[Raga DB<br>68+ Ragas]
+  A --> C[Genre DB<br>8 Genres]
+  A --> D[Instrument DB]
+  A --> E[OpenAI<br>GPT-4]
+  A --> F[Suno API<br>via Kie.ai]
+  A --> G[R2 Storage<br>Cloudflare]
+  A --> H[Frontend<br>HTML5 + Web Audio]
+      </pre>
+    </div>
+
+    <div class="ds-grid-3 ds-reveal" style="margin-top:24px">
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">Data Layer</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">Raga Data Layer</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">68+ ragas with complete Indian music theory: aaroha, avaroha, vadi, samvadi, pakad, thaat, time of day, mood, season, and difficulty. Organized by traditional time periods (4 AM to midnight).</p>
+      </div>
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">AI Service</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">AI Melody Service</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">OpenAI GPT-4 generates musically authentic compositions following Alap-Jor-Jhala structure with ornamentations (meend, gamak, kan swaras). Enforces aaroha/avaroha rules and emphasizes vadi/samvadi.</p>
+      </div>
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">Generator</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">MIDI Builder</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">Converts AI-generated melody events to Standard MIDI Files (SMF Type 0) using midi-writer-js. Handles tempo mapping, velocity, instrument selection (GM Sitar default), and timing.</p>
+      </div>
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">Synthesis</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">WAV Synthesizer</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">Renders melody to 44.1kHz 16-bit mono WAV using pure sine wave synthesis with ADSR envelope. Serves as pitch-accurate reference audio for Suno API production.</p>
+      </div>
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">Production</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">Suno API Integration</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">Two-tier generation via Kie.ai gateway: Quick mode (text prompt) and Authentic mode (WAV reference upload). Includes polling, download, and R2 upload pipeline.</p>
+      </div>
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">Storage</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">Cloudflare R2 Storage</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">S3-compatible object storage for generated tracks, MIDI files, and metadata. Persistent track library with JSON metadata for the frontend player.</p>
+      </div>
+    </div>
+
+    <!-- Module Map -->
+    <div class="code-block ds-reveal" style="margin-top:2rem">
+      <div class="code-header">src/ directory structure</div>
+      <div class="code-body">
+<span class="cm">// Core modules</span>
+src/
+  <span class="str">server.js</span>           <span class="cm">// Express app + API routes</span>
+  <span class="str">config.js</span>           <span class="cm">// Environment configuration</span>
+  <span class="str">features.js</span>         <span class="cm">// Feature flags</span>
+  data/
+    <span class="str">ragas.js</span>          <span class="cm">// 68+ raga definitions with full theory</span>
+    <span class="str">genres.js</span>         <span class="cm">// 8 genre profiles (Classical to Orchestral)</span>
+    <span class="str">instruments.js</span>    <span class="cm">// Instrument library</span>
+  services/
+    <span class="str">aiMelodyGenerator.js</span>  <span class="cm">// GPT-4 melody composition</span>
+    <span class="str">promptBuilder.js</span>      <span class="cm">// Suno prompt construction</span>
+    <span class="str">sunoApi.js</span>            <span class="cm">// Suno/Kie.ai API client</span>
+    <span class="str">synthesizer.js</span>        <span class="cm">// Sine wave WAV renderer</span>
+    <span class="str">cloudflare-r2.js</span>      <span class="cm">// R2 storage operations</span>
+  generators/
+    <span class="str">midiBuilder.js</span>    <span class="cm">// MIDI file creation (midi-writer-js)</span>
+    <span class="str">alapGenerator.js</span>  <span class="cm">// Algorithmic alap generation</span>
+  converters/
+    <span class="str">swaraConverter.js</span> <span class="cm">// Indian &harr; Western note mapping</span>
+  utils/
+    <span class="str">logger.js</span>         <span class="cm">// Module-scoped logging</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="ds-divider" style="max-width:var(--ds-max-width);margin:0 auto">
+
+<!-- MUSIC THEORY -->
+<section class="ds-section" id="music-theory">
+  <div class="ds-container">
+    <div class="ds-overline ds-reveal">Indian Classical Music</div>
+    <h2 class="ds-section-title ds-reveal">Music Theory Implementation</h2>
+    <p class="ds-body ds-reveal" style="color:var(--ds-text-secondary);max-width:560px;margin-bottom:2.5rem">A complete digital encoding of Hindustani classical music theory, mapping the ancient swara system to Western notation and MIDI.</p>
+
+    <div class="ds-glass-card mermaid-wrap ds-reveal">
+      <div class="caption">Swara Conversion Pipeline</div>
+      <pre class="mermaid">
+graph LR
+  A["Indian Notation<br>Sa Re Ga Ma Pa Dha Ni"] --> B["Western Notes<br>C D E F G A B"]
+  B --> C["MIDI Numbers<br>60 62 64 65 67 69 71"]
+      </pre>
+    </div>
+
+    <div class="two-col ds-reveal" style="margin-top:2rem">
+      <div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:.75rem">Swara-to-Western Mapping</h3>
+        <table class="swara-table">
+          <thead>
+            <tr><th>Swara</th><th>Western</th><th>Semi</th><th>Type</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="highlight">S</td><td class="note">C</td><td>0</td><td><span class="type-tag type-fixed">Fixed</span></td></tr>
+            <tr><td class="highlight">r</td><td class="note">Db</td><td>1</td><td><span class="type-tag type-komal">Komal</span></td></tr>
+            <tr><td class="highlight">R</td><td class="note">D</td><td>2</td><td><span class="type-tag type-shuddha">Shuddha</span></td></tr>
+            <tr><td class="highlight">g</td><td class="note">Eb</td><td>3</td><td><span class="type-tag type-komal">Komal</span></td></tr>
+            <tr><td class="highlight">G</td><td class="note">E</td><td>4</td><td><span class="type-tag type-shuddha">Shuddha</span></td></tr>
+            <tr><td class="highlight">m</td><td class="note">F</td><td>5</td><td><span class="type-tag type-shuddha">Shuddha</span></td></tr>
+            <tr><td class="highlight">M</td><td class="note">F#</td><td>6</td><td><span class="type-tag type-tivra">Tivra</span></td></tr>
+            <tr><td class="highlight">P</td><td class="note">G</td><td>7</td><td><span class="type-tag type-fixed">Fixed</span></td></tr>
+            <tr><td class="highlight">d</td><td class="note">Ab</td><td>8</td><td><span class="type-tag type-komal">Komal</span></td></tr>
+            <tr><td class="highlight">D</td><td class="note">A</td><td>9</td><td><span class="type-tag type-shuddha">Shuddha</span></td></tr>
+            <tr><td class="highlight">n</td><td class="note">Bb</td><td>10</td><td><span class="type-tag type-komal">Komal</span></td></tr>
+            <tr><td class="highlight">N</td><td class="note">B</td><td>11</td><td><span class="type-tag type-shuddha">Shuddha</span></td></tr>
+          </tbody>
+        </table>
+        <p class="ds-caption" style="margin-top:.5rem">Case convention: uppercase = shuddha/natural, lowercase = komal/flat, M = tivra/sharp. Sa and Pa are fixed (achala) swaras.</p>
+      </div>
+
+      <div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:.75rem">Raga Database Schema</h3>
+        <div class="schema-block">
+          <div class="schema-field"><span class="field-name">name</span><span class="field-type">string</span><span class="field-desc">Display name (e.g., "Bhairav")</span></div>
+          <div class="schema-field"><span class="field-name">thaat</span><span class="field-type">string</span><span class="field-desc">Parent scale family (10 thaats)</span></div>
+          <div class="schema-field"><span class="field-name">scaleIndian</span><span class="field-type">string</span><span class="field-desc">Notes in swara notation</span></div>
+          <div class="schema-field"><span class="field-name">aaroha</span><span class="field-type">string</span><span class="field-desc">Ascending sequence</span></div>
+          <div class="schema-field"><span class="field-name">avaroha</span><span class="field-type">string</span><span class="field-desc">Descending sequence</span></div>
+          <div class="schema-field"><span class="field-name">vadi</span><span class="field-type">string</span><span class="field-desc">King note (most important)</span></div>
+          <div class="schema-field"><span class="field-name">samvadi</span><span class="field-type">string</span><span class="field-desc">Queen note (2nd most)</span></div>
+          <div class="schema-field"><span class="field-name">pakad</span><span class="field-type">string?</span><span class="field-desc">Signature phrase pattern</span></div>
+          <div class="schema-field"><span class="field-name">time</span><span class="field-type">string</span><span class="field-desc">Time of day for performance</span></div>
+          <div class="schema-field"><span class="field-name">mood</span><span class="field-type">array</span><span class="field-desc">Emotional qualities</span></div>
+          <div class="schema-field"><span class="field-name">westernMode</span><span class="field-type">string</span><span class="field-desc">Closest Western scale</span></div>
+          <div class="schema-field"><span class="field-name">difficulty</span><span class="field-type">string?</span><span class="field-desc">Learning difficulty level</span></div>
+          <div class="schema-field"><span class="field-name">special</span><span class="field-type">string?</span><span class="field-desc">Special rules (e.g., "omits Pa")</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example raga -->
+    <div class="code-block ds-reveal" style="margin-top:2rem">
+      <div class="code-header">Example: Raga Bhairav</div>
+      <div class="code-body">
+<span class="prop">bhairav</span>: {
+  <span class="prop">name</span>: <span class="str">'Bhairav'</span>,
+  <span class="prop">thaat</span>: <span class="str">'Bhairav'</span>,
+  <span class="prop">scaleIndian</span>: <span class="str">'S r G m P d N'</span>,
+  <span class="prop">aaroha</span>: <span class="str">'S r G m P d N S\''</span>,       <span class="cm">// Ascending to upper Sa</span>
+  <span class="prop">avaroha</span>: <span class="str">'S\' N d P m G r S'</span>,     <span class="cm">// Descending back</span>
+  <span class="prop">time</span>: <span class="str">'Early Morning (4 AM - 7 AM)'</span>,
+  <span class="prop">mood</span>: [<span class="str">'Devotional'</span>, <span class="str">'Serious'</span>, <span class="str">'Majestic'</span>],
+  <span class="prop">vadi</span>: <span class="str">'d'</span>,                          <span class="cm">// Komal Dha = Ab (king note)</span>
+  <span class="prop">samvadi</span>: <span class="str">'G'</span>,                       <span class="cm">// Shuddha Ga = E (queen note)</span>
+  <span class="prop">westernMode</span>: <span class="str">'Double Harmonic Major'</span>,
+  <span class="prop">pakad</span>: <span class="str">'G m d P, m G r S'</span>,         <span class="cm">// Signature melodic phrase</span>
+}
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="ds-divider" style="max-width:var(--ds-max-width);margin:0 auto">
+
+<!-- PIPELINE -->
+<section class="ds-section" id="pipeline">
+  <div class="ds-container">
+    <div class="ds-overline ds-reveal">Generation Flow</div>
+    <h2 class="ds-section-title ds-reveal">AI Melody to Production Pipeline</h2>
+    <p class="ds-body ds-reveal" style="color:var(--ds-text-secondary);max-width:560px;margin-bottom:2.5rem">Two generation modes power the system: Quick (prompt-only) and Authentic (full MIDI synthesis chain).</p>
+
+    <div class="ds-glass-card mermaid-wrap ds-reveal">
+      <div class="caption">Authentic Mode Pipeline</div>
+      <pre class="mermaid">
+graph LR
+  A[AI Melody Gen<br>GPT-4] --> B[MIDI Builder<br>midi-writer-js]
+  B --> C[WAV Synthesizer<br>44.1kHz Sine]
+  C --> D[R2 Upload<br>Cloudflare]
+  D --> E[Suno Upload-Cover API<br>via Kie.ai]
+  E --> F[Poll Status]
+  F --> G[Download]
+  G --> H[R2 Storage<br>Final Track]
+      </pre>
+    </div>
+
+    <div class="ds-glass-card mermaid-wrap ds-reveal">
+      <div class="caption">Quick Mode Flow</div>
+      <pre class="mermaid">
+graph LR
+  A[Template Prompt<br>Raga + Genre] --> B[Suno Generate API<br>Text-to-Music]
+  B --> C[Poll Status]
+  C --> D[Download]
+  D --> E[R2 Storage<br>Final Track]
+      </pre>
+    </div>
+
+    <div class="ds-glass-card mermaid-wrap ds-reveal">
+      <div class="caption">Alap-Jor-Jhala Structure</div>
+      <pre class="mermaid">
+graph LR
+  A["Alap<br>35% of duration<br>Slow, meditative"] --> B["Jor<br>35% of duration<br>Rhythmic pulse"]
+  B --> C["Jhala<br>30% of duration<br>Fast climax"]
+      </pre>
+    </div>
+
+    <div class="two-col ds-reveal" style="margin-top:2rem">
+      <div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:.75rem">Phase Timing Allocation</h3>
+        <div class="code-block">
+          <div class="code-header">Alap-Jor-Jhala structure</div>
+          <div class="code-body">
+<span class="kw">const</span> <span class="fn">PHASE_TIMING</span> = {
+  <span class="prop">alap</span>:  { start: <span class="num">0.00</span>, end: <span class="num">0.35</span> }, <span class="cm">// 35% - slow, meditative</span>
+  <span class="prop">jor</span>:   { start: <span class="num">0.35</span>, end: <span class="num">0.70</span> }, <span class="cm">// 35% - rhythmic pulse</span>
+  <span class="prop">jhala</span>: { start: <span class="num">0.70</span>, end: <span class="num">1.00</span> }, <span class="cm">// 30% - fast climax</span>
+};
+
+<span class="cm">// Average note durations per phase:</span>
+<span class="cm">// Alap:  ~2.5 sec (long, sustained)</span>
+<span class="cm">// Jor:   ~1.0 sec (medium, rhythmic)</span>
+<span class="cm">// Jhala: ~0.4 sec (rapid, energetic)</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:.75rem">MIDI Builder Core</h3>
+        <div class="code-block">
+          <div class="code-header">midiBuilder.js - key logic</div>
+          <div class="code-body">
+<span class="kw">function</span> <span class="fn">secondsToTicks</span>(seconds, tempo, ticksPerBeat) {
+  <span class="kw">return</span> Math.<span class="fn">round</span>(
+    seconds * ticksPerBeat * (tempo / <span class="num">60</span>)
+  );
+}
+
+<span class="cm">// Default: tempo 45 BPM (slow alap)</span>
+<span class="cm">// Instrument: GM 104 (Sitar)</span>
+<span class="cm">// Format: SMF Type 0 (single track)</span>
+<span class="cm">// Ticks: 128 per beat</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-reveal" style="margin-top:2rem">
+      <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:.75rem">WAV Synthesis Engine</h3>
+      <div class="code-block">
+        <div class="code-header">synthesizer.js - sine wave generation with ADSR envelope</div>
+        <div class="code-body">
+<span class="kw">const</span> SAMPLE_RATE = <span class="num">44100</span>;  <span class="cm">// CD quality</span>
+<span class="kw">const</span> BIT_DEPTH   = <span class="num">16</span>;     <span class="cm">// 16-bit PCM</span>
+<span class="kw">const</span> CHANNELS    = <span class="num">1</span>;      <span class="cm">// Mono (reference only)</span>
+
+<span class="kw">function</span> <span class="fn">midiToFrequency</span>(midiNote) {
+  <span class="kw">return</span> <span class="num">440</span> * Math.<span class="fn">pow</span>(<span class="num">2</span>, (midiNote - <span class="num">69</span>) / <span class="num">12</span>);
+}
+
+<span class="cm">// ADSR Envelope:</span>
+<span class="cm">// Attack:  10% of note or 100ms max (fade in)</span>
+<span class="cm">// Sustain: Full amplitude</span>
+<span class="cm">// Release: 20% of note or 200ms max (fade out)</span>
+<span class="cm">// Max amplitude: 50% to prevent clipping</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="ds-divider" style="max-width:var(--ds-max-width);margin:0 auto">
+
+<!-- GENRE SYSTEM -->
+<section class="ds-section">
+  <div class="ds-container">
+    <div class="ds-overline ds-reveal">Multi-Genre</div>
+    <h2 class="ds-section-title ds-reveal">8-Genre Fusion System</h2>
+    <p class="ds-body ds-reveal" style="color:var(--ds-text-secondary);max-width:560px;margin-bottom:2.5rem">Every raga can be rendered in any genre. The system maps raga moods to genre compatibility and adjusts BPM, instruments, and production style.</p>
+
+    <div class="ds-grid-4 ds-reveal">
+      <div class="ds-glass-card genre-card">
+        <div class="genre-name">Indian Classical</div>
+        <div class="genre-meta">40-80 BPM -- Sitar, Tabla, Bansuri</div>
+        <div class="genre-tags"><span class="genre-tag">Hindustani</span><span class="genre-tag">Raga</span><span class="genre-tag">Traditional</span><span class="genre-tag">Modal</span></div>
+      </div>
+      <div class="ds-glass-card genre-card">
+        <div class="genre-name">Atmospheric / Ambient</div>
+        <div class="genre-meta">60-90 BPM -- Synth Pad, Strings, Piano</div>
+        <div class="genre-tags"><span class="genre-tag">Cinematic</span><span class="genre-tag">Ethereal</span><span class="genre-tag">Reverb-drenched</span></div>
+      </div>
+      <div class="ds-glass-card genre-card">
+        <div class="genre-name">Metal / Heavy</div>
+        <div class="genre-meta">80-140 BPM -- Electric Guitar, Drums</div>
+        <div class="genre-tags"><span class="genre-tag">Distorted</span><span class="genre-tag">Progressive</span><span class="genre-tag">Intense</span></div>
+      </div>
+      <div class="ds-glass-card genre-card">
+        <div class="genre-name">Electronic / EDM</div>
+        <div class="genre-meta">110-140 BPM -- Synth Lead, 808, Arp</div>
+        <div class="genre-tags"><span class="genre-tag">Festival</span><span class="genre-tag">Dance</span><span class="genre-tag">Bass-heavy</span></div>
+      </div>
+      <div class="ds-glass-card genre-card">
+        <div class="genre-name">Lo-fi / Chill</div>
+        <div class="genre-meta">70-90 BPM -- Rhodes, Soft Drums</div>
+        <div class="genre-tags"><span class="genre-tag">Vinyl crackle</span><span class="genre-tag">Study beats</span><span class="genre-tag">Warm</span></div>
+      </div>
+      <div class="ds-glass-card genre-card">
+        <div class="genre-name">Jazz Fusion</div>
+        <div class="genre-meta">80-120 BPM -- Saxophone, Piano, Bass</div>
+        <div class="genre-tags"><span class="genre-tag">Improvisation</span><span class="genre-tag">Complex harmonies</span><span class="genre-tag">Virtuosic</span></div>
+      </div>
+      <div class="ds-glass-card genre-card">
+        <div class="genre-name">World Fusion</div>
+        <div class="genre-meta">70-110 BPM -- Sitar, Handpan, Oud</div>
+        <div class="genre-tags"><span class="genre-tag">Cross-cultural</span><span class="genre-tag">Global</span><span class="genre-tag">Organic</span></div>
+      </div>
+      <div class="ds-glass-card genre-card">
+        <div class="genre-name">Orchestral / Cinematic</div>
+        <div class="genre-meta">60-100 BPM -- Strings, Brass, Choir</div>
+        <div class="genre-tags"><span class="genre-tag">Epic</span><span class="genre-tag">Film score</span><span class="genre-tag">Dramatic</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="ds-divider" style="max-width:var(--ds-max-width);margin:0 auto">
+
+<!-- API ROUTES -->
+<section class="ds-section" id="api">
+  <div class="ds-container">
+    <div class="ds-overline ds-reveal">REST API</div>
+    <h2 class="ds-section-title ds-reveal">API Endpoints</h2>
+    <p class="ds-body ds-reveal" style="color:var(--ds-text-secondary);max-width:560px;margin-bottom:2.5rem">Express.js API with endpoints for raga data, generation, track management, and AI melody composition.</p>
+
+    <div class="route-list ds-reveal">
+      <div class="route"><span class="method get">GET</span><span class="path">/api/ragas</span><span class="desc">List all 68+ ragas with full theory data</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/ragas/:key</span><span class="desc">Get single raga details</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/ragas/:key/scale</span><span class="desc">Western scale notes + MIDI mapping</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/genres</span><span class="desc">All 8 genre profiles</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/genres/suggest/:key</span><span class="desc">Mood-based genre suggestions for a raga</span></div>
+      <div class="route"><span class="method post">POST</span><span class="path">/api/generate</span><span class="desc">Generate track (Quick or Authentic mode)</span></div>
+      <div class="route"><span class="method post">POST</span><span class="path">/api/generate/ai-melody</span><span class="desc">AI melody composition + MIDI + WAV</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/status/:taskId</span><span class="desc">Poll generation status</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/tracks</span><span class="desc">Track library from R2 metadata</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/instruments</span><span class="desc">Available instrument library</span></div>
+    </div>
+  </div>
+</section>
+
+<hr class="ds-divider" style="max-width:var(--ds-max-width);margin:0 auto">
+
+<!-- FRONTEND -->
+<section class="ds-section" id="frontend">
+  <div class="ds-container">
+    <div class="ds-overline ds-reveal">User Interface</div>
+    <h2 class="ds-section-title ds-reveal">Frontend and iOS Wrapper</h2>
+    <p class="ds-body ds-reveal" style="color:var(--ds-text-secondary);max-width:560px;margin-bottom:2.5rem">A clean UI with Web Audio API waveform visualization, filter panels, and native iOS integration via SwiftUI WebView.</p>
+
+    <div class="ds-grid-2 ds-reveal">
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">Design</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">Neomorphic Design</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">Soft shadows, rounded corners, neutral palette. Browse by time of day, mood, thaat, or all ragas. Filter panel slides in from right with smooth transitions.</p>
+      </div>
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">Audio</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">Waveform Visualization</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">Real-time audio waveform using Web Audio API AnalyserNode. Animated frequency bars respond to playback, creating an immersive listening experience.</p>
+      </div>
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">Mobile</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">iOS SwiftUI Wrapper</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">Native iOS app wraps the web app in WKWebView with SafeArea handling, native audio session integration, and App Store distribution.</p>
+      </div>
+      <div class="ds-glass-card">
+        <div class="ds-overline" style="margin-bottom:8px">Hosting</div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:8px">Vercel Deployment</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">Deployed to ragaradio.vercel.app with automatic builds. Express.js serverless functions handle API routes. Static assets served via CDN.</p>
+      </div>
+    </div>
+
+    <div class="waveform-demo ds-reveal">
+      <p class="ds-caption" style="margin-bottom:.4rem">Web Audio API Waveform Visualization</p>
+      <div class="wave-bars">
+        <script>
+          for(let i=0;i<48;i++){
+            document.write('<div class="wave-bar" style="animation-delay:'+(i*0.05).toFixed(2)+'s;height:'+(15+Math.random()*60)+'%"></div>');
+          }
+        </script>
+      </div>
+      <p class="ds-caption" style="margin-top:.4rem">AnalyserNode &rarr; getByteFrequencyData() &rarr; Canvas/DOM render loop</p>
+    </div>
+  </div>
+</section>
+
+<hr class="ds-divider" style="max-width:var(--ds-max-width);margin:0 auto">
+
+<!-- TECH STACK -->
+<section class="ds-section">
+  <div class="ds-container">
+    <div class="ds-overline ds-reveal">Dependencies</div>
+    <h2 class="ds-section-title ds-reveal">Technology Stack</h2>
+
+    <div class="stack-row ds-reveal">
+      <div class="ds-glass-card stack-item"><div class="stack-label">Runtime</div><div class="stack-val">Node.js + Express</div></div>
+      <div class="ds-glass-card stack-item"><div class="stack-label">AI Engine</div><div class="stack-val">OpenAI GPT-4</div></div>
+      <div class="ds-glass-card stack-item"><div class="stack-label">Music Production</div><div class="stack-val">Suno via Kie.ai</div></div>
+      <div class="ds-glass-card stack-item"><div class="stack-label">MIDI</div><div class="stack-val">midi-writer-js</div></div>
+      <div class="ds-glass-card stack-item"><div class="stack-label">Audio</div><div class="stack-val">WAV 44.1kHz/16-bit</div></div>
+      <div class="ds-glass-card stack-item"><div class="stack-label">Storage</div><div class="stack-val">Cloudflare R2</div></div>
+      <div class="ds-glass-card stack-item"><div class="stack-label">Hosting</div><div class="stack-val">Vercel</div></div>
+      <div class="ds-glass-card stack-item"><div class="stack-label">Mobile</div><div class="stack-val">iOS SwiftUI</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Raga Radio -- Technical Architecture &bull; <a href="https://ragaradio.vercel.app">ragaradio.vercel.app</a></p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'neutral',
+  flowchart: { curve: 'basis', padding: 20 }
+});
+
+// Reveal on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('visible');
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.ds-reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

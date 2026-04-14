@@ -1,6 +1,6 @@
 /**
- * Raga Radio - Main Application JavaScript
- * Neomorphic UI with Waveform Visualizer
+ * Raga Radio — Main Application
+ * Twilight Concert Hall Edition
  */
 
 // ============================================
@@ -11,9 +11,7 @@ const state = {
   libraryTracks: [],
   genres: [],
   instruments: [],
-  features: {
-    enableGeneration: true, // Default to true, will be updated from server
-  },
+  features: { enableGeneration: true },
   currentRaga: null,
   currentTrack: null,
   currentTrackIndex: -1,
@@ -21,156 +19,175 @@ const state = {
   isPlaying: false,
   generatingRagas: new Set(),
   fullPlayerVisible: false,
-  audioContext: null,
-  analyser: null,
-  dataArray: null,
+  activeTab: 'home',
+  activeFilter: 'all',
+  searchQuery: '',
+  autopilot: false,
+  autopilotInterval: null,
+  autopilotLastBlock: null,
 };
 
 // ============================================
-// DOM Elements
+// DOM Cache
 // ============================================
-const elements = {
-  // Filter Panel
-  filterBtn: document.getElementById('filter-btn'),
-  filterPanel: document.getElementById('filter-panel'),
-  filterPanelBackdrop: document.getElementById('filter-panel-backdrop'),
-  filterPanelClose: document.getElementById('filter-panel-close'),
-  filterItems: document.querySelectorAll('.filter-item'),
-  filterTags: document.getElementById('filter-tags'),
+const $ = (id) => document.getElementById(id);
+const $$ = (sel) => document.querySelectorAll(sel);
 
-  // Sections
-  librarySection: document.getElementById('library-section'),
-  timeSection: document.getElementById('time-section'),
-  moodSection: document.getElementById('mood-section'),
-  allSection: document.getElementById('all-section'),
+const el = {
+  // Screens
+  screenHome: $('screen-home'),
+  screenExplore: $('screen-explore'),
+  screenLibrary: $('screen-library'),
+
+  // Time Hero
+  timeHero: $('time-hero'),
+  timeGreeting: $('time-greeting'),
+  timeTitle: $('time-title'),
+  timeDesc: $('time-desc'),
+
+  // Home sections
+  currentTimeRagas: $('current-time-ragas'),
+  homeDevotional: $('home-devotional'),
+  homeRomantic: $('home-romantic'),
+  homePeaceful: $('home-peaceful'),
+  homeSerious: $('home-serious'),
+
+  // Explore
+  searchInput: $('search-input'),
+  searchClear: $('search-clear'),
+  exploreGrid: $('explore-grid'),
 
   // Library
-  trackList: document.getElementById('track-list'),
-  trackCount: document.getElementById('track-count'),
-  totalDuration: document.getElementById('total-duration'),
-
-  // Raga Grids
-  morningRagas: document.getElementById('morning-ragas'),
-  afternoonRagas: document.getElementById('afternoon-ragas'),
-  eveningRagas: document.getElementById('evening-ragas'),
-  nightRagas: document.getElementById('night-ragas'),
-  devotionalRagas: document.getElementById('devotional-ragas'),
-  romanticRagas: document.getElementById('romantic-ragas'),
-  peacefulRagas: document.getElementById('peaceful-ragas'),
-  seriousRagas: document.getElementById('serious-ragas'),
-  allRagas: document.getElementById('all-ragas'),
+  trackList: $('track-list'),
+  trackCount: $('track-count'),
+  totalDuration: $('total-duration'),
 
   // Mini Player
-  nowPlaying: document.getElementById('now-playing'),
-  miniPlayerTitle: document.getElementById('mini-player-title'),
-  miniPlayerSubtitle: document.getElementById('mini-player-subtitle'),
-  miniPlayerArtwork: document.getElementById('mini-player-artwork'),
-  playPauseBtn: document.getElementById('play-pause-btn'),
-  progressFill: document.getElementById('progress-fill'),
+  miniPlayer: $('mini-player'),
+  miniTitle: $('mini-title'),
+  miniSubtitle: $('mini-subtitle'),
+  miniArtwork: $('mini-artwork'),
+  miniPlayBtn: $('mini-play-btn'),
+  miniProgressFill: $('mini-progress-fill'),
 
   // Full Player
-  fullPlayer: document.getElementById('full-player'),
-  fullPlayerClose: document.getElementById('full-player-close'),
-  fullPlayerTitle: document.getElementById('full-player-title'),
-  fullPlayerSubtitle: document.getElementById('full-player-subtitle'),
-  fullPlayerArtworkInner: document.getElementById('full-player-artwork-inner'),
-  fullPlayerProgressFill: document.getElementById('full-player-progress-fill'),
-  fullPlayerCurrentTime: document.getElementById('full-player-current-time'),
-  fullPlayerDuration: document.getElementById('full-player-duration'),
-  fullPlayerPlayBtn: document.getElementById('full-player-play-btn'),
-  fullPlayerPrev: document.getElementById('full-player-prev'),
-  fullPlayerNext: document.getElementById('full-player-next'),
+  fullPlayer: $('full-player'),
+  fullPlayerClose: $('full-player-close'),
+  fpTitle: $('fp-title'),
+  fpSubtitle: $('fp-subtitle'),
+  fpProgressFill: $('fp-progress-fill'),
+  fpProgressKnob: $('fp-progress-knob'),
+  fpProgressTrack: $('fp-progress-track'),
+  fpCurrentTime: $('fp-current-time'),
+  fpDuration: $('fp-duration'),
+  fpPlayBtn: $('fp-play-btn'),
+  fpPrev: $('fp-prev'),
+  fpNext: $('fp-next'),
+  fpShare: $('full-player-share'),
 
   // Waveform
-  waveformContainer: document.getElementById('waveform-container'),
-  waveformCanvas: document.getElementById('waveform-canvas'),
+  waveformCanvas: $('waveform-canvas'),
 
-  // Modal
-  modal: document.getElementById('raga-modal'),
-  modalClose: document.getElementById('modal-close'),
-  modalTitle: document.getElementById('modal-title'),
-  modalThaat: document.getElementById('modal-thaat'),
-  modalArtwork: document.getElementById('modal-artwork'),
-  modalTime: document.getElementById('modal-time'),
-  modalMood: document.getElementById('modal-mood'),
-  modalScaleIndian: document.getElementById('modal-scale-indian'),
-  modalScaleWestern: document.getElementById('modal-scale-western'),
-  modalMode: document.getElementById('modal-mode'),
-  modalDescription: document.getElementById('modal-description'),
-  generateBtn: document.getElementById('generate-btn'),
-  playBtn: document.getElementById('play-btn'),
-  generationStatus: document.getElementById('generation-status'),
-  statusText: document.querySelector('.status-text'),
+  // Bottom Sheet
+  sheetBackdrop: $('sheet-backdrop'),
+  ragaSheet: $('raga-sheet'),
+  sheetTitle: $('sheet-title'),
+  sheetThaat: $('sheet-thaat'),
+  sheetTime: $('sheet-time'),
+  sheetMood: $('sheet-mood'),
+  sheetScaleIndian: $('sheet-scale-indian'),
+  sheetScaleWestern: $('sheet-scale-western'),
+  sheetMode: $('sheet-mode'),
+  sheetDescription: $('sheet-description'),
 
-  // Generation Options
-  generationOptions: document.getElementById('generation-options'),
-  modeControl: document.getElementById('mode-control'),
-  genreControl: document.getElementById('genre-control'),
-  genreHint: document.getElementById('genre-hint'),
-  instrumentSelect: document.getElementById('instrument-select'),
-  instrumentSelector: document.getElementById('instrument-selector'),
-  durationSelect: document.getElementById('duration-select'),
-  instrumentGroup: document.getElementById('instrument-group'),
-  durationGroup: document.getElementById('duration-group'),
-  addBackgroundMusic: document.getElementById('add-background-music'),
+  // Generation Banner
+  genBanner: $('gen-banner'),
+  genBannerSpinner: $('gen-banner-spinner'),
+  genBannerTitle: $('gen-banner-title'),
+  genBannerDetail: $('gen-banner-detail'),
+  genBannerAction: $('gen-banner-action'),
+  genBannerClose: $('gen-banner-close'),
 
-  // Modal Tabs
-  tabDetails: document.getElementById('tab-details'),
-  tabGenerate: document.getElementById('tab-generate'),
+  // Generation
+  generateBtn: $('generate-btn'),
+  sheetPlayBtn: $('sheet-play-btn'),
+  sheetShareBtn: $('sheet-share-btn'),
+  genProgress: $('gen-progress'),
+  genProgressCircle: $('gen-progress-circle'),
+  genStep: $('gen-step'),
+  genPhase: $('gen-phase'),
+  genText: $('gen-text'),
+  instrumentSelector: $('instrument-selector'),
+  addBackgroundMusic: $('add-background-music'),
 
-  // Artifact Buttons
-  artifactButtons: document.getElementById('artifact-buttons'),
-  artifactMidi: document.getElementById('artifact-midi'),
-  artifactWav: document.getElementById('artifact-wav'),
-  artifactMp3: document.getElementById('artifact-mp3'),
-
-  // Generation Status (improved)
-  stepNumber: document.getElementById('step-number'),
-  stepTotal: document.getElementById('step-total'),
-  generationProgressFill: document.getElementById('generation-progress-fill'),
-  statusPhase: document.getElementById('status-phase'),
+  // Artifacts
+  artifactRow: $('artifact-row'),
+  artifactMidi: $('artifact-midi'),
+  artifactWav: $('artifact-wav'),
+  artifactMp3: $('artifact-mp3'),
 
   // Audio
-  audioPlayer: document.getElementById('audio-player'),
+  audioPlayer: $('audio-player'),
+
+  // Autopilot
+  autopilotToggle: $('autopilot-toggle'),
+  miniAutopilotBadge: $('mini-autopilot-badge'),
+
+  // Home Radio Player
+  homeRadioTitle: $('home-radio-title'),
+  homeRadioMeta: $('home-radio-meta'),
+  homeRadioPlayBtn: $('home-radio-play-btn'),
+  homeRadioAutoBadge: $('home-radio-auto-badge'),
+  homeRadioProgressFill: $('home-radio-progress-fill'),
+  homeRadioBars: $('home-radio-bars'),
 };
 
 // ============================================
-// SVG Icons (Clean, Apple-like)
+// Mood Color Map
 // ============================================
-const musicNoteIcon = '<svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>';
-const shareIcon = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>';
+const MOOD_COLORS = {
+  'Devotional': 'var(--mood-devotional)',
+  'Romantic': 'var(--mood-romantic)',
+  'Peaceful': 'var(--mood-peaceful)',
+  'Serious': 'var(--mood-serious)',
+  'Heroic': 'var(--mood-heroic)',
+  'Playful': 'var(--mood-playful)',
+  'Mysterious': '#9B7BC4',
+  'Joyful': '#E8C838',
+  'Light': '#8BC4A0',
+  'Pathos': '#C47B8B',
+  'Meditative': '#6BA098',
+  'Majestic': '#C49B38',
+  'Tender': '#D4A0A8',
+  'Serene': '#7BADC4',
+  'Melancholic': '#7B7BAD',
+  'Dramatic': '#C45050',
+  'Celebratory': '#D4A038',
+  'Contemplative': '#8B8BAD',
+};
+
+function getMoodColor(mood) {
+  return MOOD_COLORS[mood] || 'var(--accent-dim)';
+}
+
+function getTracksForRaga(ragaId) {
+  return state.libraryTracks.filter(t =>
+    t.ragaId === ragaId || (t.raga && t.raga.id === ragaId)
+  );
+}
 
 // ============================================
-// Instrument & Genre Emoji Mappings
+// Instrument & Genre Mappings
 // ============================================
-const INSTRUMENT_EMOJIS = {
-  // Indian Classical
-  sitar: '🎸', sarod: '🎻', veena: '🪕', tanpura: '🎸', santoor: '🪘',
-  bansuri: '🪈', shehnai: '🎺', tabla: '🥁', pakhawaj: '🥁',
-  mridangam: '🪘', harmonium: '🎹', vocal: '🎤',
-  // Western Electric
-  electric_guitar: '🎸', bass_guitar: '🎸', drums: '🥁',
-  double_bass_drums: '🥁',
-  // Western Acoustic
-  acoustic_guitar: '🎸', piano: '🎹', cello: '🎻',
-  strings: '🎻', strings_section: '🎻', flute: '🪈',
-  // Jazz
-  saxophone: '🎷', jazz_guitar: '🎸', upright_bass: '🎻',
-  jazz_drums: '🥁', trumpet: '🎺',
-  // Electronic
-  synth_pad: '🎹', synth_lead: '🎹', synth_bass: '🎹',
-  electronic_drums: '🥁', '808': '🔊', arpeggiator: '🎹',
-  vocoder: '🎤', pluck_synth: '🎹',
-  // Lo-fi
-  lofi_piano: '🎹', mellow_guitar: '🎸', soft_drums: '🥁',
-  bass: '🎸', rhodes: '🎹', vinyl_fx: '💿', jazz_keys: '🎹',
-  // Orchestral
-  brass: '🎺', woodwinds: '🎺', timpani: '🥁', harp: '🎵',
-  choir: '🎤', french_horn: '🎺', orchestral_hits: '🎵',
-  // World/Fusion
-  ambient_guitar: '🎸', glass_marimba: '🎵', cajon: '🥁',
-  didgeridoo: '🎺', handpan: '🥁', kalimba: '🎵',
-  oud: '🪕', djembe: '🥁'
+const GENRE_NAMES = {
+  'indianClassical': 'Indian Classical',
+  'atmospheric': 'Atmospheric / Ambient',
+  'metal': 'Metal / Heavy',
+  'electronic': 'Electronic / EDM',
+  'lofi': 'Lo-fi / Chill',
+  'jazzFusion': 'Jazz Fusion',
+  'worldFusion': 'World Fusion',
+  'orchestral': 'Orchestral / Cinematic'
 };
 
 const INSTRUMENT_NAMES = {
@@ -183,8 +200,7 @@ const INSTRUMENT_NAMES = {
   acoustic_guitar: 'Acoustic Guitar', piano: 'Piano', cello: 'Cello',
   strings: 'Strings', strings_section: 'Strings Section', flute: 'Flute',
   saxophone: 'Saxophone', jazz_guitar: 'Jazz Guitar',
-  upright_bass: 'Upright Bass', jazz_drums: 'Jazz Drums',
-  trumpet: 'Trumpet',
+  upright_bass: 'Upright Bass', jazz_drums: 'Jazz Drums', trumpet: 'Trumpet',
   synth_pad: 'Synth Pad', synth_lead: 'Synth Lead',
   synth_bass: 'Synth Bass', electronic_drums: 'Electronic Drums',
   '808': '808', arpeggiator: 'Arpeggiator', vocoder: 'Vocoder',
@@ -200,231 +216,548 @@ const INSTRUMENT_NAMES = {
   kalimba: 'Kalimba', oud: 'Oud', djembe: 'Djembe'
 };
 
-const GENRE_NAMES = {
-  'indianClassical': 'Indian Classical',
-  'atmospheric': 'Atmospheric / Ambient',
-  'metal': 'Metal / Heavy',
-  'electronic': 'Electronic / EDM',
-  'lofi': 'Lo-fi / Chill',
-  'jazzFusion': 'Jazz Fusion',
-  'worldFusion': 'World Fusion',
-  'orchestral': 'Orchestral / Cinematic'
+function getInstrumentName(id) { return INSTRUMENT_NAMES[id] || id; }
+function getGenreDisplayName(id) { return GENRE_NAMES[id] || id; }
+
+function formatCategory(category) {
+  const map = {
+    'indian_string': 'Indian String', 'indian_wind': 'Indian Wind',
+    'indian_percussion': 'Indian Percussion', 'indian_keyboard': 'Indian Keyboard',
+    'indian_vocal': 'Vocal', 'western_electric': 'Electric',
+    'western_acoustic': 'Acoustic', 'western_string': 'String',
+    'western_keyboard': 'Keyboard', 'western_percussion': 'Percussion',
+    'western_wind': 'Wind', 'jazz_wind': 'Jazz Wind',
+    'jazz_string': 'Jazz String', 'jazz_brass': 'Jazz Brass',
+    'jazz_percussion': 'Jazz Percussion', 'electronic': 'Electronic',
+    'lofi': 'Lo-fi', 'orchestral': 'Orchestral',
+    'world_fusion': 'World Fusion', 'world_percussion': 'World Percussion',
+    'world_string': 'World String', 'world_wind': 'World Wind',
+  };
+  return map[category] || category.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ============================================
+// Time of Day
+// ============================================
+function getTimeOfDay() {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 10) return 'morning';
+  if (hour >= 10 && hour < 16) return 'afternoon';
+  if (hour >= 16 && hour < 22) return 'evening';
+  return 'night';
+}
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 12) return 'Good Morning';
+  if (hour >= 12 && hour < 17) return 'Good Afternoon';
+  if (hour >= 17 && hour < 22) return 'Good Evening';
+  return 'Good Night';
+}
+
+const TIME_INFO = {
+  morning: { title: 'Morning Ragas', desc: '4 AM – 10 AM · Sunrise melodies', filter: 'morning' },
+  afternoon: { title: 'Afternoon Ragas', desc: '10 AM – 4 PM · Midday compositions', filter: 'afternoon' },
+  evening: { title: 'Evening Ragas', desc: '4 PM – 10 PM · Sunset melodies', filter: 'evening' },
+  night: { title: 'Night Ragas', desc: '10 PM – 4 AM · Moonlit compositions', filter: 'night' },
 };
 
-function getInstrumentEmoji(id) {
-  return INSTRUMENT_EMOJIS[id] || '🎵';
-}
-
-function getInstrumentName(id) {
-  return INSTRUMENT_NAMES[id] || id;
-}
-
-function getGenreDisplayName(genreId) {
-  return GENRE_NAMES[genreId] || genreId;
+function updateTimeHero() {
+  const tod = getTimeOfDay();
+  const info = TIME_INFO[tod];
+  el.timeHero.className = 'time-hero ' + tod;
+  el.timeGreeting.textContent = getTimeGreeting();
+  el.timeTitle.textContent = info.title;
+  el.timeDesc.textContent = info.desc;
 }
 
 // ============================================
-// Modal Tab Switching
+// Tab Navigation
 // ============================================
-function switchModalTab(tabName) {
+function switchTab(tabName) {
+  state.activeTab = tabName;
+
   // Update tab buttons
-  document.querySelectorAll('.modal-tab').forEach(tab => {
-    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+
+  // Update screens
+  const screens = { home: el.screenHome, explore: el.screenExplore, library: el.screenLibrary };
+  Object.entries(screens).forEach(([key, screen]) => {
+    screen.classList.toggle('active', key === tabName);
   });
 
-  // Update content visibility
-  document.querySelectorAll('.tab-content').forEach(content => {
-    content.classList.toggle('active', content.id === `tab-${tabName}`);
-  });
+  // Refresh library when switching to it
+  if (tabName === 'library') fetchLibraryTracks();
 }
 
 // ============================================
-// Segmented Control Helpers
+// Raga Card Rendering
 // ============================================
-function getSegmentValue(controlId) {
-  const control = document.getElementById(controlId);
-  const active = control?.querySelector('.segment.active');
-  return active?.dataset.value || null;
+function createRagaCard(raga) {
+  const card = document.createElement('div');
+  card.className = 'raga-card';
+  if (state.generatingRagas.has(raga.id)) card.classList.add('generating');
+  card.dataset.ragaId = raga.id;
+  card.dataset.mood = (raga.mood && raga.mood[0]) || 'Peaceful';
+
+  const moods = raga.mood || [];
+  const primaryMood = moods[0] || 'Peaceful';
+  const moodColor = getMoodColor(primaryMood);
+
+  // Unique geometric pattern per raga based on name hash
+  const hash = raga.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const patternRotation = hash % 360;
+  const patternScale = 0.8 + (hash % 5) * 0.1;
+  const patternType = hash % 4;
+
+  const patterns = [
+    `<circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.15"/>
+     <circle cx="50" cy="50" r="18" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.1"/>`,
+    `<polygon points="50,20 80,70 20,70" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.12"/>
+     <polygon points="50,35 65,60 35,60" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.08"/>`,
+    `<rect x="25" y="25" width="50" height="50" rx="4" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.12" transform="rotate(45 50 50)"/>`,
+    `<path d="M50 20 Q80 50 50 80 Q20 50 50 20Z" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.12"/>`,
+  ];
+
+  const ragaTracks = getTracksForRaga(raga.id);
+  const hasTrack = ragaTracks.length > 0;
+
+  card.innerHTML = `
+    <div class="raga-card-art">
+      <div class="raga-card-art-bg" style="background: linear-gradient(${patternRotation}deg, ${moodColor} 0%, transparent 80%)"></div>
+      <svg viewBox="0 0 100 100" class="raga-card-pattern" style="transform: rotate(${patternRotation}deg) scale(${patternScale})">
+        ${patterns[patternType]}
+      </svg>
+      <svg viewBox="0 0 24 24" class="raga-card-note"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill="currentColor"/></svg>
+      ${hasTrack ? `<button class="raga-card-play-btn" title="Play">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+      </button>` : ''}
+    </div>
+    <div class="raga-card-body">
+      <div class="raga-card-name">${raga.name}</div>
+      <div class="raga-card-meta">
+        <span class="raga-card-mood">
+          <span class="raga-card-mood-dot" style="background: ${moodColor}"></span>
+          ${primaryMood}
+        </span>
+        ${hasTrack ? `<span class="raga-card-track-badge">${ragaTracks.length}</span>` : ''}
+      </div>
+    </div>
+  `;
+
+  card.addEventListener('click', () => openRagaSheet(raga));
+
+  if (hasTrack) {
+    const playBtn = card.querySelector('.raga-card-play-btn');
+    if (playBtn) {
+      playBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const track = ragaTracks[0];
+        state.currentTrack = track;
+        state.currentTrackIndex = state.libraryTracks.indexOf(track);
+        playTrack(track.url, track.raga || raga, track.raga?.thaat ? `${track.raga.thaat} Thaat` : '');
+      });
+    }
+  }
+
+  return card;
 }
 
-function setSegmentValue(controlId, value) {
-  const control = document.getElementById(controlId);
-  if (!control) return;
-  control.querySelectorAll('.segment').forEach(seg => {
-    seg.classList.toggle('active', seg.dataset.value === value);
+function getRagaTimeCategory(raga) {
+  const time = (raga.time || '').toLowerCase();
+  if (time.includes('morning') || time.includes('4 am') || time.includes('sunrise') || time.includes('dawn')) return 'morning';
+  if (time.includes('afternoon') || time.includes('10 am') || time.includes('midday') || time.includes('noon')) return 'afternoon';
+  if (time.includes('evening') || time.includes('4 pm') || time.includes('sunset') || time.includes('dusk')) return 'evening';
+  if (time.includes('night') || time.includes('10 pm') || time.includes('midnight') || time.includes('late')) return 'night';
+  return 'evening'; // default
+}
+
+function getRagaMoods(raga) {
+  return (raga.mood || []).map(m => m.toLowerCase());
+}
+
+// ============================================
+// Home Screen Rendering
+// ============================================
+function renderHome() {
+  const tod = getTimeOfDay();
+  const ragas = state.ragas;
+
+  // Current time ragas
+  const timeRagas = ragas.filter(r => getRagaTimeCategory(r) === tod);
+  renderHorizontalScroll(el.currentTimeRagas, timeRagas);
+
+  // Mood sections
+  const moodSections = {
+    devotional: el.homeDevotional,
+    romantic: el.homeRomantic,
+    peaceful: el.homePeaceful,
+    serious: el.homeSerious,
+  };
+
+  Object.entries(moodSections).forEach(([mood, container]) => {
+    const filtered = ragas.filter(r => getRagaMoods(r).includes(mood));
+    renderHorizontalScroll(container, filtered);
   });
 }
 
-function setupSegmentedControl(controlId, onChange) {
-  const control = document.getElementById(controlId);
-  if (!control) return;
-  control.querySelectorAll('.segment').forEach(seg => {
-    seg.addEventListener('click', () => {
-      control.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
-      seg.classList.add('active');
-      if (onChange) onChange(seg.dataset.value);
+function renderHorizontalScroll(container, ragas) {
+  container.innerHTML = '';
+  if (ragas.length === 0) {
+    container.innerHTML = '<span style="color: var(--text-3); font-size: var(--text-sm); padding: var(--sp-3);">No ragas found</span>';
+    return;
+  }
+  ragas.forEach(raga => container.appendChild(createRagaCard(raga)));
+}
+
+// ============================================
+// Explore Screen Rendering
+// ============================================
+function renderExplore() {
+  let ragas = state.ragas;
+
+  // Filter
+  if (state.activeFilter !== 'all') {
+    const filter = state.activeFilter;
+    const timeFilters = ['morning', 'afternoon', 'evening', 'night'];
+    if (timeFilters.includes(filter)) {
+      ragas = ragas.filter(r => getRagaTimeCategory(r) === filter);
+    } else {
+      ragas = ragas.filter(r => getRagaMoods(r).includes(filter));
+    }
+  }
+
+  // Search
+  if (state.searchQuery) {
+    const q = state.searchQuery.toLowerCase();
+    ragas = ragas.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      (r.thaat || '').toLowerCase().includes(q) ||
+      (r.mood || []).some(m => m.toLowerCase().includes(q))
+    );
+  }
+
+  el.exploreGrid.innerHTML = '';
+  ragas.forEach(raga => el.exploreGrid.appendChild(createRagaCard(raga)));
+}
+
+// ============================================
+// Library Rendering
+// ============================================
+function renderLibrary() {
+  const tracks = state.libraryTracks;
+  el.trackCount.textContent = tracks.length;
+
+  if (tracks.length === 0) {
+    el.trackList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <svg viewBox="0 0 48 48"><path d="M24 4v22.1C22.8 25.4 21.5 25 20 25c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8V12h8V4H24z" fill="currentColor" opacity="0.3"/></svg>
+        </div>
+        <p class="empty-state-title">No tracks yet</p>
+        <p class="empty-state-desc">Generate your first raga from the Home or Explore tabs</p>
+      </div>
+    `;
+    el.totalDuration.textContent = '0:00';
+    return;
+  }
+
+  el.trackList.innerHTML = tracks.map((track, index) => {
+    const raga = track.raga;
+    const ragaName = raga ? raga.name : track.ragaKey || track.ragaName || 'Unknown';
+    const genre = track.genre || 'indianClassical';
+    const trackMood = (raga?.mood && raga.mood[0]) || 'Peaceful';
+    const trackMoodImg = getMoodImage(trackMood);
+
+    return `
+      <div class="track-item" data-index="${index}">
+        <div class="track-artwork">
+          <div class="track-artwork-bg" style="background-image: url('${trackMoodImg}')"></div>
+          <div class="track-artwork-glass"></div>
+          <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill="currentColor"/></svg>
+        </div>
+        <div class="track-info">
+          <div class="track-title">Raga ${ragaName}</div>
+          <div class="track-meta">${getGenreDisplayName(genre)}</div>
+        </div>
+        <div class="track-actions">
+          <button class="track-action-btn" onclick="event.stopPropagation(); shareTrackByIndex(${index})" title="Share">
+            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+          </button>
+          <button class="track-action-btn play-btn" onclick="event.stopPropagation(); playLibraryTrack(${index})" title="Play">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Click to show details
+  $$('.track-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (!e.target.closest('.track-action-btn')) {
+        showTrackDetails(parseInt(item.dataset.index));
+      }
     });
   });
 }
 
 // ============================================
-// Generation Status Step Definitions
+// Bottom Sheet
 // ============================================
-const GENERATION_STEPS = {
-  authentic: [
-    { step: 1, total: 4, phase: 'Generating Melody', text: 'Creating authentic raga melody with AI...' },
-    { step: 2, total: 4, phase: 'Building Audio', text: 'Converting melody to audio...' },
-    { step: 3, total: 4, phase: 'AI Processing', text: 'Suno AI is transforming the melody...' },
-    { step: 4, total: 4, phase: 'Finalizing', text: 'Downloading and saving your track...' },
-  ],
-  standard: [
-    { step: 1, total: 3, phase: 'Generating', text: 'Starting AI music generation...' },
-    { step: 2, total: 3, phase: 'Processing', text: 'Creating musical variations...' },
-    { step: 3, total: 3, phase: 'Finalizing', text: 'Downloading your track...' },
-  ],
-  withBackground: [
-    { step: 1, total: 5, phase: 'Generating Melody', text: 'Creating authentic raga melody...' },
-    { step: 2, total: 5, phase: 'Building Audio', text: 'Converting to audio format...' },
-    { step: 3, total: 5, phase: 'AI Processing', text: 'Suno AI processing melody...' },
-    { step: 4, total: 5, phase: 'Adding Background', text: 'Adding atmospheric background music...' },
-    { step: 5, total: 5, phase: 'Finalizing', text: 'Downloading final track...' },
-  ]
+// Map moods to image files
+const MOOD_IMAGES = {
+  'Devotional': '/images/moods/devotional.jpg',
+  'Romantic': '/images/moods/romantic.jpg',
+  'Peaceful': '/images/moods/peaceful.jpg',
+  'Serious': '/images/moods/serious.jpg',
+  'Mysterious': '/images/moods/serious.jpg',
+  'Meditative': '/images/moods/peaceful.jpg',
+  'Heroic': '/images/moods/devotional.jpg',
+  'Joyful': '/images/moods/devotional.jpg',
+  'Pathos': '/images/moods/romantic.jpg',
+  'Tender': '/images/moods/romantic.jpg',
+  'Melancholic': '/images/moods/serious.jpg',
+  'Serene': '/images/moods/peaceful.jpg',
 };
 
-/**
- * Update the generation status UI
- * @param {number} stepIndex - Current step index (0-based)
- * @param {string} mode - Generation mode ('authentic', 'standard', 'withBackground')
- * @param {string} customText - Optional custom status text
- */
-function updateGenerationStatus(stepIndex, mode = 'authentic', customText = null) {
-  const steps = GENERATION_STEPS[mode] || GENERATION_STEPS.standard;
-  const currentStep = steps[Math.min(stepIndex, steps.length - 1)];
+function getMoodImage(mood) {
+  return MOOD_IMAGES[mood] || '/images/moods/devotional.jpg';
+}
 
-  if (elements.stepNumber) elements.stepNumber.textContent = currentStep.step;
-  if (elements.stepTotal) elements.stepTotal.textContent = `/${currentStep.total}`;
+function updateSheetArtwork(mood) {
+  const artwork = document.querySelector('.sheet-artwork');
+  if (!artwork) return;
+  // Remove old dynamic layers
+  artwork.querySelectorAll('.sheet-artwork-bg, .sheet-artwork-glass').forEach(el => el.remove());
+  // Add mood image background
+  const bg = document.createElement('div');
+  bg.className = 'sheet-artwork-bg';
+  bg.style.backgroundImage = `url('${getMoodImage(mood)}')`;
+  const glass = document.createElement('div');
+  glass.className = 'sheet-artwork-glass';
+  artwork.insertBefore(glass, artwork.firstChild);
+  artwork.insertBefore(bg, artwork.firstChild);
+}
 
-  if (elements.generationProgressFill) {
-    const progress = (currentStep.step / currentStep.total) * 100;
-    elements.generationProgressFill.style.width = `${progress}%`;
+function openRagaSheet(raga) {
+  state.currentRaga = raga;
+
+  el.sheetTitle.textContent = `Raga ${raga.name}`;
+  el.sheetThaat.textContent = raga.thaat ? `${raga.thaat} Thaat` : 'Hindustani Classical';
+
+  // Update artwork with mood image
+  const primaryMood = (raga.mood && raga.mood[0]) || 'Peaceful';
+  updateSheetArtwork(primaryMood);
+  el.sheetTime.textContent = raga.time || '—';
+
+  // Mood badges
+  if (raga.mood && raga.mood.length > 0) {
+    el.sheetMood.innerHTML = raga.mood.map(m =>
+      `<span class="mood-badge">${m}</span>`
+    ).join('');
+  } else {
+    el.sheetMood.textContent = '—';
   }
 
-  if (elements.statusPhase) elements.statusPhase.textContent = currentStep.phase;
-  if (elements.statusText) elements.statusText.textContent = customText || currentStep.text;
-}
+  el.sheetScaleIndian.textContent = raga.scaleIndian || raga.scale || '—';
+  el.sheetScaleWestern.textContent = raga.westernNotes || '—';
+  el.sheetMode.textContent = raga.westernMode || '—';
+  el.sheetDescription.textContent = raga.description || 'A beautiful raga from the Hindustani classical tradition.';
 
-// ============================================
-// Toast Notification
-// ============================================
-function showToast(message, duration = 3000) {
-  const toast = document.getElementById('toast-notification');
-  const toastMessage = document.getElementById('toast-message');
+  // Remove dynamic rows
+  $$('.detail-row-dynamic').forEach(r => r.remove());
 
-  if (!toast || !toastMessage) return;
+  // Show generate, hide play/share
+  el.generateBtn.classList.remove('hidden');
+  el.sheetPlayBtn.classList.add('hidden');
+  el.sheetShareBtn.classList.add('hidden');
+  el.genProgress.classList.add('hidden');
 
-  toastMessage.textContent = message;
-  toast.classList.remove('hidden');
-  toast.classList.add('show');
+  // Hide artifacts
+  if (el.artifactRow) el.artifactRow.classList.add('hidden');
 
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.classList.add('hidden'), 300);
-  }, duration);
-}
+  // Show generated versions for this raga
+  const ragaTracks = getTracksForRaga(raga.id);
+  if (ragaTracks.length > 0) {
+    const tracksSection = document.createElement('div');
+    tracksSection.className = 'raga-tracks-section detail-row-dynamic';
+    tracksSection.innerHTML = `
+      <div class="raga-tracks-header">
+        <span class="detail-label">Generated Versions</span>
+        <span class="raga-tracks-count">${ragaTracks.length}</span>
+      </div>
+      <div class="raga-tracks-list">
+        ${ragaTracks.map((track, i) => {
+          const genre = track.genre || 'indianClassical';
+          const instruments = Array.isArray(track.instruments) ? track.instruments : (track.instrument ? [track.instrument] : []);
+          const instNames = instruments.slice(0, 3).map(id => getInstrumentName(id)).join(', ');
+          const duration = track.duration ? formatTime(track.duration) : '';
+          const dateStr = track.createdAt ? new Date(track.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+          const trackIdx = state.libraryTracks.indexOf(track);
+          return `
+            <div class="raga-track-item" data-track-idx="${trackIdx}">
+              <div class="raga-track-info">
+                <span class="raga-track-genre">${getGenreDisplayName(genre)}</span>
+                <span class="raga-track-meta">${[instNames, duration, dateStr].filter(Boolean).join(' · ')}</span>
+              </div>
+              <button class="raga-track-play-btn" data-track-idx="${trackIdx}" title="Play">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+              </button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    const detailGrid = document.querySelector('#sheet-tab-details .detail-grid');
+    if (detailGrid) detailGrid.after(tracksSection);
 
-// ============================================
-// Share Functionality
-// ============================================
-async function shareTrack(track) {
-  const raga = track.raga;
-  const ragaName = raga ? raga.name : track.ragaName || 'Unknown';
-  const mood = raga?.mood ? raga.mood.join(', ') : '';
-  const time = raga?.time || '';
-  const instruments = Array.isArray(track.instruments)
-    ? track.instruments.join(', ')
-    : (track.instrument || '');
-
-  // Build shareable URL
-  const trackUrl = track.url;
-
-  // Format share text
-  const shareTitle = `Raga ${ragaName} - Raga Radio`;
-  const shareText = [
-    `Raga ${ragaName}`,
-    mood ? `Mood: ${mood}` : '',
-    time ? `Best time: ${time}` : '',
-    instruments ? `Instruments: ${instruments}` : '',
-    '',
-    'Listen on Raga Radio'
-  ].filter(Boolean).join('\n');
-
-  // Try Web Share API first
-  if (navigator.share && navigator.canShare) {
-    try {
-      await navigator.share({
-        title: shareTitle,
-        text: shareText,
-        url: trackUrl
+    tracksSection.querySelectorAll('.raga-track-play-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.trackIdx);
+        closeSheet();
+        playLibraryTrack(idx);
       });
-      return; // Successfully shared via native API
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        return; // User cancelled - no fallback needed
+    });
+  }
+
+  // Switch to details tab
+  switchSheetTab('details');
+
+  // Show sheet
+  showSheet();
+
+  // Suggest genre
+  if (raga.id) suggestGenreForRaga(raga.id);
+
+  // Apply feature flags
+  applyFeatureFlags();
+}
+
+function showTrackDetails(index) {
+  const track = state.libraryTracks[index];
+  if (!track) return;
+
+  const raga = track.raga;
+  state.currentRaga = {
+    ...raga,
+    audioUrl: track.url,
+    referenceAudioUrl: track.referenceAudioUrl,
+  };
+
+  const ragaName = raga ? raga.name : track.ragaName || 'Unknown';
+  el.sheetTitle.textContent = `Raga ${ragaName}`;
+  el.sheetThaat.textContent = raga ? `${raga.thaat} Thaat` : '';
+  el.sheetTime.textContent = raga ? raga.time : '';
+
+  if (raga && raga.mood && raga.mood.length > 0) {
+    el.sheetMood.innerHTML = raga.mood.map(m =>
+      `<span class="mood-badge">${m}</span>`
+    ).join('');
+  } else {
+    el.sheetMood.textContent = '—';
+  }
+
+  el.sheetScaleIndian.textContent = raga ? raga.scaleIndian : '';
+  el.sheetScaleWestern.textContent = raga ? raga.westernNotes : '';
+  el.sheetMode.textContent = raga ? raga.westernMode : '';
+  el.sheetDescription.textContent = raga?.description || 'A beautiful raga.';
+
+  // Remove previous dynamic rows
+  $$('.detail-row-dynamic').forEach(r => r.remove());
+
+  // Add genre, instruments, date
+  const instruments = Array.isArray(track.instruments) ? track.instruments : (track.instrument ? [track.instrument] : []);
+  const genre = track.genre || 'indianClassical';
+  const dateStr = new Date(track.createdAt).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric'
+  });
+
+  const detailGrid = document.querySelector('#sheet-tab-details .detail-grid');
+  if (detailGrid) {
+    // Genre card
+    const genreCard = document.createElement('div');
+    genreCard.className = 'detail-card detail-row-dynamic';
+    genreCard.innerHTML = `<span class="detail-label">Genre</span><span class="detail-value">${getGenreDisplayName(genre)}</span>`;
+    detailGrid.appendChild(genreCard);
+
+    // Instruments card
+    if (instruments.length > 0) {
+      const instCard = document.createElement('div');
+      instCard.className = 'detail-card full-width detail-row-dynamic';
+      instCard.innerHTML = `
+        <span class="detail-label">Instruments</span>
+        <span class="detail-value">${instruments.map(id => `<span class="instrument-chip">${getInstrumentName(id)}</span>`).join('')}</span>
+      `;
+      detailGrid.appendChild(instCard);
+    }
+
+    // Date card
+    const dateCard = document.createElement('div');
+    dateCard.className = 'detail-card detail-row-dynamic';
+    dateCard.innerHTML = `<span class="detail-label">Created</span><span class="detail-value">${dateStr}</span>`;
+    detailGrid.appendChild(dateCard);
+  }
+
+  // Artifacts
+  if (el.artifactRow) {
+    const hasAnyArtifact = track.midiFileUrl || track.referenceAudioUrl || track.url;
+    if (hasAnyArtifact) {
+      el.artifactRow.classList.remove('hidden');
+      if (el.artifactMidi) {
+        if (track.midiFileUrl) { el.artifactMidi.href = track.midiFileUrl; el.artifactMidi.classList.remove('disabled'); }
+        else { el.artifactMidi.removeAttribute('href'); el.artifactMidi.classList.add('disabled'); }
       }
-      // Fall through to clipboard fallback
-      console.log('Web Share API failed, falling back to clipboard:', err);
+      if (el.artifactWav) {
+        if (track.referenceAudioUrl) { el.artifactWav.href = track.referenceAudioUrl; el.artifactWav.classList.remove('disabled'); }
+        else { el.artifactWav.removeAttribute('href'); el.artifactWav.classList.add('disabled'); }
+      }
+      if (el.artifactMp3) {
+        if (track.url) { el.artifactMp3.href = track.url; el.artifactMp3.classList.remove('disabled'); }
+        else { el.artifactMp3.removeAttribute('href'); el.artifactMp3.classList.add('disabled'); }
+      }
+    } else {
+      el.artifactRow.classList.add('hidden');
     }
   }
 
-  // Fallback: Copy to clipboard
-  const fullShareText = `${shareText}\n\n${trackUrl}`;
+  // Show play/share, hide generate
+  el.generateBtn.classList.add('hidden');
+  el.sheetPlayBtn.classList.remove('hidden');
+  el.sheetShareBtn.classList.remove('hidden');
+  el.genProgress.classList.add('hidden');
 
-  try {
-    await navigator.clipboard.writeText(fullShareText);
-    showToast('Link copied to clipboard!');
-  } catch (err) {
-    // Final fallback: show copy modal with selectable text
-    showCopyModal(fullShareText);
-  }
+  // Wire up buttons
+  el.sheetPlayBtn.onclick = () => { closeSheet(); playLibraryTrack(index); };
+  el.sheetShareBtn.onclick = () => shareTrack(track);
+
+  switchSheetTab('details');
+  showSheet();
 }
 
-function showCopyModal(text) {
-  const modal = document.getElementById('copy-modal');
-  const textarea = document.getElementById('copy-modal-text');
-
-  if (!modal || !textarea) {
-    // Ultimate fallback
-    prompt('Copy this link:', text);
-    return;
-  }
-
-  textarea.value = text;
-  modal.classList.remove('hidden');
-  textarea.select();
+function showSheet() {
+  el.sheetBackdrop.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    el.sheetBackdrop.classList.add('visible');
+    el.ragaSheet.classList.add('visible');
+  });
 }
 
-function closeCopyModal() {
-  const modal = document.getElementById('copy-modal');
-  if (modal) modal.classList.add('hidden');
+function closeSheet() {
+  el.sheetBackdrop.classList.remove('visible');
+  el.ragaSheet.classList.remove('visible');
+  setTimeout(() => {
+    el.sheetBackdrop.classList.add('hidden');
+  }, 300);
 }
 
-function copyFromModal() {
-  const textarea = document.getElementById('copy-modal-text');
-  if (textarea) {
-    textarea.select();
-    document.execCommand('copy');
-    showToast('Copied to clipboard!');
-    closeCopyModal();
-  }
+function switchSheetTab(tabName) {
+  $$('.sheet-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+  $$('.sheet-tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === `sheet-tab-${tabName}`);
+  });
 }
-
-// Expose share function globally for onclick handlers
-window.shareTrackByIndex = function(index) {
-  const track = state.libraryTracks[index];
-  if (track) {
-    shareTrack(track);
-  }
-};
 
 // ============================================
 // Waveform Visualizer
@@ -468,21 +801,19 @@ class WaveformVisualizer {
     this.ctx.beginPath();
     this.ctx.moveTo(0, this.height / 2);
     this.ctx.lineTo(this.width, this.height / 2);
-    this.ctx.strokeStyle = '#D1D9E6';
+    this.ctx.strokeStyle = 'rgba(232, 168, 56, 0.15)';
     this.ctx.lineWidth = 2;
     this.ctx.stroke();
   }
 
   animate() {
     if (!this.isPlaying) return;
-
     this.ctx.clearRect(0, 0, this.width, this.height);
 
-    // Draw smooth waveform
     const gradient = this.ctx.createLinearGradient(0, 0, this.width, 0);
-    gradient.addColorStop(0, '#4A90D9');
-    gradient.addColorStop(0.5, '#6BA3E0');
-    gradient.addColorStop(1, '#4A90D9');
+    gradient.addColorStop(0, 'rgba(232, 168, 56, 0.6)');
+    gradient.addColorStop(0.5, 'rgba(232, 168, 56, 0.9)');
+    gradient.addColorStop(1, 'rgba(232, 168, 56, 0.6)');
 
     this.ctx.beginPath();
     this.ctx.strokeStyle = gradient;
@@ -493,30 +824,18 @@ class WaveformVisualizer {
     const amplitude = this.height * 0.35;
 
     for (let x = 0; x < this.width; x++) {
-      const normalizedX = x / this.width;
-
-      // Multiple sine waves for organic look
-      const wave1 = Math.sin(normalizedX * Math.PI * 4 + this.phase) * 0.5;
-      const wave2 = Math.sin(normalizedX * Math.PI * 6 + this.phase * 1.3) * 0.3;
-      const wave3 = Math.sin(normalizedX * Math.PI * 2 + this.phase * 0.7) * 0.2;
-
-      // Envelope to taper at edges
-      const envelope = Math.sin(normalizedX * Math.PI);
-
+      const n = x / this.width;
+      const wave1 = Math.sin(n * Math.PI * 4 + this.phase) * 0.5;
+      const wave2 = Math.sin(n * Math.PI * 6 + this.phase * 1.3) * 0.3;
+      const wave3 = Math.sin(n * Math.PI * 2 + this.phase * 0.7) * 0.2;
+      const envelope = Math.sin(n * Math.PI);
       const y = centerY + (wave1 + wave2 + wave3) * amplitude * envelope;
-
-      if (x === 0) {
-        this.ctx.moveTo(x, y);
-      } else {
-        this.ctx.lineTo(x, y);
-      }
+      x === 0 ? this.ctx.moveTo(x, y) : this.ctx.lineTo(x, y);
     }
 
     this.ctx.stroke();
-
-    // Add glow effect
-    this.ctx.shadowColor = '#4A90D9';
-    this.ctx.shadowBlur = 10;
+    this.ctx.shadowColor = 'rgba(232, 168, 56, 0.5)';
+    this.ctx.shadowBlur = 8;
     this.ctx.stroke();
     this.ctx.shadowBlur = 0;
 
@@ -528,38 +847,28 @@ class WaveformVisualizer {
 let waveformVisualizer = null;
 
 // ============================================
-// Full Player Functions
+// Full Player
 // ============================================
 function openFullPlayer() {
   state.fullPlayerVisible = true;
-  elements.fullPlayer.classList.add('visible');
+  el.fullPlayer.classList.add('visible');
   document.body.style.overflow = 'hidden';
-
-  // Start waveform if playing
-  if (state.isPlaying && waveformVisualizer) {
-    waveformVisualizer.start();
-  }
+  if (state.isPlaying && waveformVisualizer) waveformVisualizer.start();
 }
 
 function closeFullPlayer() {
   state.fullPlayerVisible = false;
-  elements.fullPlayer.classList.remove('visible');
+  el.fullPlayer.classList.remove('visible');
   document.body.style.overflow = '';
-
-  // Stop waveform
-  if (waveformVisualizer) {
-    waveformVisualizer.stop();
-  }
+  if (waveformVisualizer) waveformVisualizer.stop();
 }
 
 function updateFullPlayer(raga, thaat = '') {
   if (!raga) return;
-
   const ragaName = typeof raga === 'string' ? raga : raga.name;
   const thaatName = thaat || (raga.thaat ? `${raga.thaat} Thaat` : 'Hindustani Classical');
-
-  elements.fullPlayerTitle.textContent = `Raga ${ragaName}`;
-  elements.fullPlayerSubtitle.textContent = thaatName;
+  el.fpTitle.textContent = `Raga ${ragaName}`;
+  el.fpSubtitle.textContent = thaatName;
 }
 
 function formatTime(seconds) {
@@ -567,6 +876,167 @@ function formatTime(seconds) {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// ============================================
+// Audio Player
+// ============================================
+function playTrack(url, raga, thaat) {
+  el.audioPlayer.src = url;
+  el.audioPlayer.play().catch(console.error);
+  state.isPlaying = true;
+
+  const ragaName = typeof raga === 'string' ? raga : raga?.name || 'Unknown';
+  const thaatName = thaat || (raga?.thaat ? `${raga.thaat} Thaat` : '');
+
+  // Mini player
+  el.miniPlayer.classList.remove('hidden');
+  el.miniTitle.textContent = `Raga ${ragaName}`;
+  el.miniSubtitle.textContent = thaatName || 'Hindustani Classical';
+
+  // Update mini player artwork with mood image
+  const miniMood = (raga?.mood && raga.mood[0]) || 'Peaceful';
+  const miniArt = el.miniArtwork;
+  miniArt.querySelectorAll('.mini-player-artwork-bg, .mini-player-artwork-glass').forEach(e => e.remove());
+  const miniBg = document.createElement('div');
+  miniBg.className = 'mini-player-artwork-bg';
+  miniBg.style.backgroundImage = `url('${getMoodImage(miniMood)}')`;
+  const miniGlass = document.createElement('div');
+  miniGlass.className = 'mini-player-artwork-glass';
+  miniArt.insertBefore(miniGlass, miniArt.firstChild);
+  miniArt.insertBefore(miniBg, miniArt.firstChild);
+
+  // Full player
+  updateFullPlayer(raga, thaatName);
+  updatePlayButtons(true);
+
+  // Start waveform
+  if (state.fullPlayerVisible && waveformVisualizer) waveformVisualizer.start();
+
+  // Update home radio player
+  updateHomePlayer();
+}
+
+function togglePlayPause() {
+  if (state.isPlaying) {
+    el.audioPlayer.pause();
+    state.isPlaying = false;
+    if (waveformVisualizer) waveformVisualizer.stop();
+    // Add breathing effect to canvas on pause
+    el.waveformCanvas.classList.add('breathing');
+  } else {
+    el.audioPlayer.play().catch(console.error);
+    state.isPlaying = true;
+    el.waveformCanvas.classList.remove('breathing');
+    if (state.fullPlayerVisible && waveformVisualizer) waveformVisualizer.start();
+  }
+  updatePlayButtons(state.isPlaying);
+  updateHomePlayer();
+}
+
+function updatePlayButtons(playing) {
+  // Mini player
+  el.miniPlayBtn.querySelector('.icon-play').classList.toggle('hidden', playing);
+  el.miniPlayBtn.querySelector('.icon-pause').classList.toggle('hidden', !playing);
+  // Full player
+  el.fpPlayBtn.querySelector('.icon-play').classList.toggle('hidden', playing);
+  el.fpPlayBtn.querySelector('.icon-pause').classList.toggle('hidden', !playing);
+}
+
+function playLibraryTrack(index) {
+  const track = state.libraryTracks[index];
+  if (!track) return;
+  state.currentTrackIndex = index;
+  state.currentTrack = track;
+  playTrack(track.url, track.raga, track.raga?.thaat ? `${track.raga.thaat} Thaat` : '');
+}
+
+function playNextTrack() {
+  if (state.libraryTracks.length === 0) return;
+  const next = (state.currentTrackIndex + 1) % state.libraryTracks.length;
+  playLibraryTrack(next);
+}
+
+function playPrevTrack() {
+  if (state.libraryTracks.length === 0) return;
+  const prev = state.currentTrackIndex <= 0 ? state.libraryTracks.length - 1 : state.currentTrackIndex - 1;
+  playLibraryTrack(prev);
+}
+
+// ============================================
+// Share
+// ============================================
+async function shareTrack(track) {
+  const raga = track.raga;
+  const ragaName = raga ? raga.name : track.ragaName || 'Unknown';
+  const mood = raga?.mood ? raga.mood.join(', ') : '';
+  const time = raga?.time || '';
+  const instruments = Array.isArray(track.instruments) ? track.instruments.join(', ') : (track.instrument || '');
+  const trackUrl = track.url;
+
+  const shareTitle = `Raga ${ragaName} - Raga Radio`;
+  const shareText = [
+    `Raga ${ragaName}`,
+    mood ? `Mood: ${mood}` : '',
+    time ? `Best time: ${time}` : '',
+    instruments ? `Instruments: ${instruments}` : '',
+    '', 'Listen on Raga Radio'
+  ].filter(Boolean).join('\n');
+
+  if (navigator.share && navigator.canShare) {
+    try {
+      await navigator.share({ title: shareTitle, text: shareText, url: trackUrl });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+
+  const fullShareText = `${shareText}\n\n${trackUrl}`;
+  try {
+    await navigator.clipboard.writeText(fullShareText);
+    showToast('Link copied to clipboard!');
+  } catch {
+    showCopyModal(fullShareText);
+  }
+}
+
+window.shareTrackByIndex = function(index) {
+  const track = state.libraryTracks[index];
+  if (track) shareTrack(track);
+};
+
+// ============================================
+// Toast
+// ============================================
+function showToast(message, duration = 3000) {
+  const toast = $('toast');
+  const msg = $('toast-message');
+  if (!toast || !msg) return;
+  msg.textContent = message;
+  toast.classList.remove('hidden');
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.classList.add('hidden'), 300);
+  }, duration);
+}
+
+// ============================================
+// Copy Modal
+// ============================================
+function showCopyModal(text) {
+  const modal = $('copy-modal');
+  const textarea = $('copy-modal-text');
+  if (!modal || !textarea) { prompt('Copy this link:', text); return; }
+  textarea.value = text;
+  modal.classList.remove('hidden');
+  textarea.select();
+}
+
+function closeCopyModal() {
+  const modal = $('copy-modal');
+  if (modal) modal.classList.add('hidden');
 }
 
 // ============================================
@@ -578,7 +1048,8 @@ async function fetchRagas() {
     const data = await response.json();
     if (data.success) {
       state.ragas = data.ragas;
-      renderRagas();
+      renderHome();
+      renderExplore();
     }
   } catch (error) {
     console.error('Failed to fetch ragas:', error);
@@ -592,6 +1063,9 @@ async function fetchLibraryTracks() {
     if (data.success) {
       state.libraryTracks = data.tracks;
       renderLibrary();
+      // Re-render home to update play buttons on cards
+      if (state.ragas.length > 0) renderHome();
+      updateHomePlayer();
     }
   } catch (error) {
     console.error('Failed to fetch library tracks:', error);
@@ -602,9 +1076,7 @@ async function fetchGenres() {
   try {
     const response = await fetch('/api/genres');
     const data = await response.json();
-    if (data.success) {
-      state.genres = data.genres;
-    }
+    if (data.success) state.genres = data.genres;
   } catch (error) {
     console.error('Failed to fetch genres:', error);
   }
@@ -614,12 +1086,9 @@ async function fetchGenreInstruments(genreId) {
   try {
     const response = await fetch(`/api/genres/${genreId}/instruments`);
     const data = await response.json();
-    if (data.success) {
-      renderInstrumentBadges(data.instruments, data.defaultInstruments);
-    }
+    if (data.success) renderInstrumentBadges(data.instruments, data.defaultInstruments);
   } catch (error) {
     console.error('Failed to fetch genre instruments:', error);
-    populateDefaultInstruments();
   }
 }
 
@@ -633,162 +1102,13 @@ async function fetchFeatures() {
     }
   } catch (error) {
     console.error('Failed to fetch features:', error);
-    // Keep default values if fetch fails
   }
 }
 
-/**
- * Apply feature flags to the UI
- * Hides/shows elements based on enabled features
- */
 function applyFeatureFlags() {
-  // Hide Generate tab if generation is disabled
-  const generateTab = document.querySelector('.modal-tab[data-tab="generate"]');
-  if (generateTab) {
-    generateTab.style.display = state.features.enableGeneration ? '' : 'none';
-  }
-
-  // Also hide the generate button
-  if (elements.generateBtn) {
-    elements.generateBtn.style.display = state.features.enableGeneration ? '' : 'none';
-  }
-}
-
-/**
- * Render instrument badges grouped by category
- * @param {Array} instruments - Array of instrument objects
- * @param {Array} defaultInstruments - Array of instrument IDs to pre-select
- */
-function renderInstrumentBadges(instruments, defaultInstruments = []) {
-  const container = elements.instrumentSelector;
-  if (!container) return;
-
-  // Group instruments by category
-  const groups = {};
-  instruments.forEach(inst => {
-    const category = formatCategory(inst.category);
-    if (!groups[category]) groups[category] = [];
-    groups[category].push(inst);
-  });
-
-  // Render categories with badges
-  container.innerHTML = Object.entries(groups).map(([category, items]) => `
-    <div class="instrument-category">
-      <span class="instrument-category-label">${category}</span>
-      <div class="instrument-badges">
-        ${items.map(inst => `
-          <button
-            type="button"
-            class="instrument-badge ${defaultInstruments.includes(inst.id) ? 'selected' : ''}"
-            data-id="${inst.id}"
-            title="${inst.sunoDesc || inst.name}"
-          >
-            ${inst.name}
-          </button>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-
-  // Add click handlers for toggle behavior
-  container.querySelectorAll('.instrument-badge').forEach(badge => {
-    badge.addEventListener('click', (e) => {
-      e.preventDefault();
-      badge.classList.toggle('selected');
-    });
-  });
-}
-
-/**
- * Get array of selected instrument IDs from badge selector
- */
-function getSelectedInstruments() {
-  const badges = document.querySelectorAll('.instrument-badge.selected');
-  const selected = Array.from(badges).map(b => b.dataset.id);
-  // Fallback to sitar if nothing selected
-  return selected.length > 0 ? selected : ['sitar'];
-}
-
-// Keep for backward compatibility (populates the old select element if it exists)
-function populateInstrumentDropdown(instruments, defaultInstruments = []) {
-  const select = elements.instrumentSelect;
-  if (!select) return;
-
-  const groups = {};
-  instruments.forEach(inst => {
-    const category = formatCategory(inst.category);
-    if (!groups[category]) groups[category] = [];
-    groups[category].push(inst);
-  });
-
-  let html = '';
-  for (const [category, items] of Object.entries(groups)) {
-    html += `<optgroup label="${category}">`;
-    items.forEach(inst => {
-      const isDefault = defaultInstruments.includes(inst.id);
-      html += `<option value="${inst.id}" ${isDefault ? 'selected' : ''} title="${inst.sunoDesc}">${inst.name}</option>`;
-    });
-    html += '</optgroup>';
-  }
-
-  select.innerHTML = html;
-}
-
-function formatCategory(category) {
-  const categoryMap = {
-    'indian_string': 'Indian String',
-    'indian_wind': 'Indian Wind',
-    'indian_percussion': 'Indian Percussion',
-    'indian_keyboard': 'Indian Keyboard',
-    'indian_vocal': 'Vocal',
-    'western_electric': 'Electric',
-    'western_acoustic': 'Acoustic',
-    'western_string': 'String',
-    'western_keyboard': 'Keyboard',
-    'western_percussion': 'Percussion',
-    'western_wind': 'Wind',
-    'jazz_wind': 'Jazz Wind',
-    'jazz_string': 'Jazz String',
-    'jazz_brass': 'Jazz Brass',
-    'jazz_percussion': 'Jazz Percussion',
-    'electronic': 'Electronic',
-    'lofi': 'Lo-fi',
-    'orchestral': 'Orchestral',
-    'world_fusion': 'World Fusion',
-    'world_percussion': 'World Percussion',
-    'world_string': 'World String',
-    'world_wind': 'World Wind',
-  };
-  return categoryMap[category] || category.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
-
-function populateDefaultInstruments() {
-  const select = elements.instrumentSelect;
-  if (!select) return;
-
-  select.innerHTML = `
-    <optgroup label="String Instruments">
-      <option value="sitar" selected>Sitar</option>
-      <option value="sarod">Sarod</option>
-      <option value="veena">Veena</option>
-      <option value="tanpura">Tanpura (Drone)</option>
-      <option value="santoor">Santoor</option>
-    </optgroup>
-    <optgroup label="Wind Instruments">
-      <option value="bansuri">Bansuri (Bamboo Flute)</option>
-      <option value="shehnai">Shehnai</option>
-    </optgroup>
-    <optgroup label="Percussion">
-      <option value="tabla" selected>Tabla</option>
-      <option value="pakhawaj">Pakhawaj</option>
-      <option value="mridangam">Mridangam</option>
-    </optgroup>
-    <optgroup label="Vocal & Modern">
-      <option value="vocal">Vocal (Alaap style)</option>
-      <option value="harmonium">Harmonium</option>
-      <option value="synth">Synthesizer</option>
-    </optgroup>
-  `;
+  const generateTab = document.querySelector('.sheet-tab[data-tab="generate"]');
+  if (generateTab) generateTab.style.display = state.features.enableGeneration ? '' : 'none';
+  if (el.generateBtn) el.generateBtn.style.display = state.features.enableGeneration ? '' : 'none';
 }
 
 async function suggestGenreForRaga(ragaId) {
@@ -797,10 +1117,7 @@ async function suggestGenreForRaga(ragaId) {
     const data = await response.json();
     if (data.success && data.suggestedGenres.length > 0) {
       const suggested = data.suggestedGenres[0];
-      setSegmentValue('genre-control', suggested.id);
-      if (elements.genreHint) {
-        elements.genreHint.textContent = `Suggested: ${suggested.name} (matches ${data.moods.join(', ')} mood)`;
-      }
+      setGenreChipActive(suggested.id);
       state.currentGenre = suggested.id;
       await fetchGenreInstruments(suggested.id);
     }
@@ -810,916 +1127,654 @@ async function suggestGenreForRaga(ragaId) {
 }
 
 // ============================================
-// Library Rendering
+// Instrument Badges
 // ============================================
-function renderLibrary() {
-  const tracks = state.libraryTracks;
-  elements.trackCount.textContent = tracks.length;
+function renderInstrumentBadges(instruments, defaultInstruments = []) {
+  const container = el.instrumentSelector;
+  if (!container) return;
 
-  if (tracks.length === 0) {
-    elements.trackList.innerHTML = `
-      <div class="empty-library">
-        <span class="empty-icon">🎵</span>
-        <p>No tracks generated yet</p>
-        <p class="empty-hint">Generate your first raga from the "By Time" or "By Mood" tabs</p>
-      </div>
-    `;
-    elements.totalDuration.textContent = '0:00';
-    return;
-  }
+  const groups = {};
+  instruments.forEach(inst => {
+    const category = formatCategory(inst.category);
+    if (!groups[category]) groups[category] = [];
+    groups[category].push(inst);
+  });
 
-  elements.trackList.innerHTML = tracks.map((track, index) => {
-    const raga = track.raga;
-    const ragaName = raga ? raga.name : track.ragaKey || track.ragaName || 'Unknown';
-
-    return `
-      <div class="track-item" data-url="${track.url}" data-index="${index}">
-        <div class="track-artwork">${musicNoteIcon}</div>
-        <div class="track-info">
-          <div class="track-title">Raga ${ragaName}</div>
-        </div>
-        <div class="track-actions">
-          <button class="track-share-btn" onclick="event.stopPropagation(); shareTrackByIndex(${index})" title="Share">
-            ${shareIcon}
+  container.innerHTML = Object.entries(groups).map(([category, items]) => `
+    <div class="instrument-category">
+      <span class="instrument-category-label">${category}</span>
+      <div class="instrument-badges">
+        ${items.map(inst => `
+          <button type="button"
+            class="instrument-badge ${defaultInstruments.includes(inst.id) ? 'selected' : ''}"
+            data-id="${inst.id}"
+            title="${inst.sunoDesc || inst.name}">
+            ${inst.name}
           </button>
-          <button class="track-play-btn" onclick="event.stopPropagation(); playLibraryTrack(${index})" title="Play">
-            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-          </button>
-        </div>
+        `).join('')}
       </div>
-    `;
-  }).join('');
+    </div>
+  `).join('');
 
-  document.querySelectorAll('.track-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-      if (!e.target.closest('.track-play-btn')) {
-        const index = parseInt(item.dataset.index);
-        showTrackDetails(index);
-      }
+  container.querySelectorAll('.instrument-badge').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.preventDefault();
+      badge.classList.toggle('selected');
     });
   });
 }
 
-function showTrackDetails(index) {
-  const track = state.libraryTracks[index];
-  if (!track) return;
-
-  const raga = track.raga;
-  state.currentRaga = {
-    ...raga,
-    audioUrl: track.url,
-    referenceAudioUrl: track.referenceAudioUrl,
-  };
-
-  const ragaName = raga ? raga.name : track.ragaName || 'Unknown';
-  elements.modalTitle.textContent = `Raga ${ragaName}`;
-  elements.modalThaat.textContent = raga ? `${raga.thaat} Thaat` : '';
-  elements.modalArtwork.innerHTML = musicNoteIcon;
-  elements.modalTime.textContent = raga ? raga.time : '';
-  // Enhanced mood rendering with badges
-  if (raga && raga.mood && raga.mood.length > 0) {
-    const moodBadges = raga.mood.map(mood =>
-      `<span class="mood-badge">${mood}</span>`
-    ).join('');
-    elements.modalMood.innerHTML = moodBadges;
-  } else {
-    elements.modalMood.innerHTML = '<span style="color: var(--text-tertiary)">-</span>';
-  }
-  elements.modalScaleIndian.textContent = raga ? raga.scaleIndian : '';
-  elements.modalScaleWestern.textContent = raga ? raga.westernNotes : '';
-  elements.modalMode.textContent = raga ? raga.westernMode : '';
-  elements.modalDescription.textContent = raga?.description || 'A beautiful raga from the Hindustani classical tradition.';
-
-  // Remove any previously added dynamic rows
-  document.querySelectorAll('.modal-dynamic-row').forEach(el => el.remove());
-
-  const instruments = Array.isArray(track.instruments) ? track.instruments : (track.instrument ? [track.instrument] : []);
-  const genre = track.genre || 'indianClassical';
-  const dateStr = new Date(track.createdAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-
-  // Add dynamic detail rows before the artifact buttons
-  const artifactButtons = elements.artifactButtons;
-  const detailsContainer = artifactButtons?.parentNode || elements.modalDescription.parentNode;
-  const insertBeforeEl = artifactButtons || elements.modalDescription;
-
-  // 1. Genre row
-  const genreRow = document.createElement('div');
-  genreRow.className = 'detail-row modal-dynamic-row';
-  genreRow.innerHTML = `
-    <span class="detail-label">Genre</span>
-    <span class="detail-value detail-genre">${getGenreDisplayName(genre)}</span>
-  `;
-  detailsContainer.insertBefore(genreRow, insertBeforeEl);
-
-  // 2. Enhanced Instruments row with emojis
-  if (instruments.length > 0) {
-    const instrumentsRow = document.createElement('div');
-    instrumentsRow.className = 'detail-row modal-dynamic-row detail-row-instruments';
-
-    const instrumentsHtml = instruments.map(id => {
-      const emoji = getInstrumentEmoji(id);
-      const name = getInstrumentName(id);
-      return `<span class="instrument-chip">${emoji} ${name}</span>`;
-    }).join('');
-
-    instrumentsRow.innerHTML = `
-      <span class="detail-label">Instruments</span>
-      <span class="detail-value detail-instruments">${instrumentsHtml}</span>
-    `;
-    detailsContainer.insertBefore(instrumentsRow, insertBeforeEl);
-  }
-
-  // 3. Created date row
-  const dateRow = document.createElement('div');
-  dateRow.className = 'detail-row modal-dynamic-row';
-  dateRow.innerHTML = `
-    <span class="detail-label">Created</span>
-    <span class="detail-value">${dateStr}</span>
-  `;
-  detailsContainer.insertBefore(dateRow, insertBeforeEl);
-
-  // Configure artifact buttons
-  if (elements.artifactButtons) {
-    const hasAnyArtifact = track.midiFileUrl || track.referenceAudioUrl || track.url;
-
-    if (hasAnyArtifact) {
-      elements.artifactButtons.classList.remove('hidden');
-
-      // MIDI button
-      if (elements.artifactMidi) {
-        if (track.midiFileUrl) {
-          elements.artifactMidi.href = track.midiFileUrl;
-          elements.artifactMidi.classList.remove('disabled');
-        } else {
-          elements.artifactMidi.removeAttribute('href');
-          elements.artifactMidi.classList.add('disabled');
-        }
-      }
-
-      // WAV button (reference audio)
-      if (elements.artifactWav) {
-        if (track.referenceAudioUrl) {
-          elements.artifactWav.href = track.referenceAudioUrl;
-          elements.artifactWav.classList.remove('disabled');
-        } else {
-          elements.artifactWav.removeAttribute('href');
-          elements.artifactWav.classList.add('disabled');
-        }
-      }
-
-      // MP3 button (main track URL)
-      if (elements.artifactMp3) {
-        if (track.url) {
-          elements.artifactMp3.href = track.url;
-          elements.artifactMp3.classList.remove('disabled');
-        } else {
-          elements.artifactMp3.removeAttribute('href');
-          elements.artifactMp3.classList.add('disabled');
-        }
-      }
-    } else {
-      elements.artifactButtons.classList.add('hidden');
-    }
-  }
-
-  elements.generateBtn.classList.add('hidden');
-  elements.playBtn.classList.remove('hidden');
-  elements.generationStatus.classList.add('hidden');
-
-  // Show and wire up share button
-  const modalShareBtn = document.getElementById('modal-share-btn');
-  if (modalShareBtn) {
-    modalShareBtn.classList.remove('hidden');
-    modalShareBtn.onclick = () => shareTrack(track);
-  }
-
-  // Switch to Details tab for library tracks
-  switchModalTab('details');
-
-  elements.modal.classList.remove('hidden');
+function getSelectedInstruments() {
+  const badges = $$('.instrument-badge.selected');
+  const selected = Array.from(badges).map(b => b.dataset.id);
+  return selected.length > 0 ? selected : ['sitar'];
 }
 
-window.playLibraryTrack = function(index) {
-  const track = state.libraryTracks[index];
-  if (!track) return;
-
-  state.currentTrack = track;
-  state.currentTrackIndex = index;
-
-  elements.audioPlayer.src = track.url;
-  elements.audioPlayer.play();
-  state.isPlaying = true;
-
-  const ragaName = track.raga ? track.raga.name : track.ragaKey || 'Unknown';
-  const thaat = track.raga ? track.raga.thaat : '';
-
-  // Update mini player
-  elements.nowPlaying.classList.remove('hidden');
-  elements.miniPlayerTitle.textContent = `Raga ${ragaName}`;
-  elements.miniPlayerSubtitle.textContent = thaat || 'Hindustani Classical';
-
-  // Update play/pause icons
-  updatePlayPauseIcons(true);
-
-  // Update full player
-  updateFullPlayer(track.raga || { name: ragaName }, thaat);
-
-  // Highlight current track in library
-  document.querySelectorAll('.track-item').forEach((item, i) => {
-    item.classList.toggle('playing', i === index);
-  });
-
-  // Start waveform if full player is visible
-  if (state.fullPlayerVisible && waveformVisualizer) {
-    waveformVisualizer.start();
-  }
+// ============================================
+// Generation
+// ============================================
+const GENERATION_STEPS = {
+  authentic: [
+    { step: 1, total: 4, phase: 'Composing Alaap', text: 'Unfolding the raga\'s opening meditation...' },
+    { step: 2, total: 4, phase: 'Building Jor', text: 'Weaving rhythmic patterns into the melody...' },
+    { step: 3, total: 4, phase: 'AI Rendering', text: 'Suno AI is bringing the composition to life...' },
+    { step: 4, total: 4, phase: 'Finalizing', text: 'Your raga is ready...' },
+  ],
+  standard: [
+    { step: 1, total: 3, phase: 'Composing', text: 'The raga is taking shape...' },
+    { step: 2, total: 3, phase: 'Rendering', text: 'AI is weaving the melodic tapestry...' },
+    { step: 3, total: 3, phase: 'Finalizing', text: 'Your raga is ready...' },
+  ],
+  withBackground: [
+    { step: 1, total: 5, phase: 'Composing Alaap', text: 'Unfolding the raga\'s opening meditation...' },
+    { step: 2, total: 5, phase: 'Building Jor', text: 'Weaving rhythmic patterns into melody...' },
+    { step: 3, total: 5, phase: 'AI Rendering', text: 'Suno AI bringing the composition to life...' },
+    { step: 4, total: 5, phase: 'Adding Tanpura', text: 'Layering the atmospheric drone...' },
+    { step: 5, total: 5, phase: 'Finalizing', text: 'Your raga is ready...' },
+  ]
 };
 
-function updatePlayPauseIcons(isPlaying) {
-  // Mini player
-  const miniPlayIcon = elements.playPauseBtn.querySelector('.play-icon');
-  const miniPauseIcon = elements.playPauseBtn.querySelector('.pause-icon');
-  miniPlayIcon.classList.toggle('hidden', isPlaying);
-  miniPauseIcon.classList.toggle('hidden', !isPlaying);
+function updateGenerationStatus(stepIndex, mode = 'authentic', customText = null) {
+  const steps = GENERATION_STEPS[mode] || GENERATION_STEPS.standard;
+  const currentStep = steps[Math.min(stepIndex, steps.length - 1)];
 
-  // Full player
-  const fullPlayIcon = elements.fullPlayerPlayBtn.querySelector('.play-icon');
-  const fullPauseIcon = elements.fullPlayerPlayBtn.querySelector('.pause-icon');
-  fullPlayIcon.classList.toggle('hidden', isPlaying);
-  fullPauseIcon.classList.toggle('hidden', !isPlaying);
+  el.genStep.textContent = `${currentStep.step}/${currentStep.total}`;
+  el.genPhase.textContent = currentStep.phase;
+  el.genText.textContent = customText || currentStep.text;
+
+  // Update circular progress
+  const circumference = 2 * Math.PI * 26; // r=26
+  const progress = currentStep.step / currentStep.total;
+  const offset = circumference * (1 - progress);
+  el.genProgressCircle.style.strokeDashoffset = offset;
 }
 
-// ============================================
-// Generation Functions
-// ============================================
-async function generateRaga(ragaId) {
-  if (state.generatingRagas.has(ragaId)) return;
+function getActiveMode() {
+  const active = document.querySelector('#mode-control .segment.active');
+  return active?.dataset.value || 'authentic';
+}
 
-  state.generatingRagas.add(ragaId);
-  updateGenerateButton(true);
+function getActiveDuration() {
+  const active = document.querySelector('#duration-control .duration-chip.active');
+  return parseInt(active?.dataset.value || '60');
+}
 
-  const mode = getSegmentValue('mode-control') || 'authentic';
-  const genre = getSegmentValue('genre-control') || state.currentGenre || 'indianClassical';
+// ---- Generation Banner ----
+function showBanner(title, detail) {
+  el.genBannerTitle.textContent = title;
+  el.genBannerDetail.textContent = detail;
+  el.genBannerSpinner.className = 'gen-banner-spinner';
+  el.genBannerAction.classList.add('hidden');
+  el.genBannerClose.classList.add('hidden');
+  el.genBanner.classList.remove('hidden');
+  requestAnimationFrame(() => el.genBanner.classList.add('visible'));
+}
 
-  // Use badge selector for instruments
+function updateBanner(title, detail) {
+  el.genBannerTitle.textContent = title;
+  el.genBannerDetail.textContent = detail;
+}
+
+function bannerComplete(track, raga) {
+  el.genBannerSpinner.classList.add('done');
+  el.genBannerTitle.textContent = `${raga?.name || 'Track'} ready`;
+  el.genBannerDetail.textContent = 'Tap Play to listen';
+  el.genBannerAction.classList.remove('hidden');
+  el.genBannerClose.classList.remove('hidden');
+  el.genBannerAction.onclick = () => {
+    playTrack(track.url || track.audio_url, raga);
+    hideBanner();
+  };
+}
+
+function bannerError(message) {
+  el.genBannerSpinner.classList.add('error');
+  el.genBannerTitle.textContent = 'Generation failed';
+  el.genBannerDetail.textContent = message || 'Please try again';
+  el.genBannerClose.classList.remove('hidden');
+  setTimeout(hideBanner, 8000);
+}
+
+function hideBanner() {
+  el.genBanner.classList.remove('visible');
+  setTimeout(() => el.genBanner.classList.add('hidden'), 300);
+}
+
+// ---- Generation (async, non-blocking) ----
+async function generateTrack() {
+  const raga = state.currentRaga;
+  if (!raga || !raga.id) return;
+
+  const mode = getActiveMode();
+  const genreId = state.currentGenre;
   const instruments = getSelectedInstruments();
+  const duration = getActiveDuration();
+  const addBgMusic = el.addBackgroundMusic?.checked || false;
 
-  const duration = parseInt(elements.durationSelect?.value || '60');
-  const addBackgroundMusic = elements.addBackgroundMusic?.checked ?? true;
+  const genMode = (mode === 'authentic' && addBgMusic) ? 'withBackground' :
+                  (mode === 'authentic' ? 'authentic' : 'standard');
 
-  // Determine status mode for progress updates
-  let statusMode = 'standard';
-  if (mode === 'authentic') {
-    statusMode = addBackgroundMusic ? 'withBackground' : 'authentic';
-  }
+  // Close sheet and show banner immediately
+  closeSheet();
+  state.generatingRagas.add(raga.id);
+  updateRagaCardStates();
 
-  console.log('Generation options:', { mode, genre, instruments, duration, statusMode });
+  const steps = GENERATION_STEPS[genMode] || GENERATION_STEPS.standard;
+  showBanner(`Generating ${raga.name}`, steps[0].text);
 
-  let referenceAudioUrl = null;
-  let midiFileUrl = null;
-  let generatedTrackUrl = null;
+  // Capture raga and instruments for the download step
+  const genContext = { raga, genreId, instruments };
+
+  // Run the whole pipeline async — user can keep browsing
+  runGenerationPipeline(raga, mode, genMode, genContext, { genreId, instruments, duration, addBgMusic });
+}
+
+async function runGenerationPipeline(raga, mode, genMode, genContext, params) {
+  const steps = GENERATION_STEPS[genMode] || GENERATION_STEPS.standard;
 
   try {
-    let endpoint, requestBody;
+    const endpoint = mode === 'authentic'
+      ? `/api/generate/${raga.id}/authentic`
+      : `/api/generate/${raga.id}`;
 
-    // Initial status
-    updateGenerationStatus(0, statusMode);
+    const body = { genre: params.genreId, instruments: params.instruments, duration: params.duration };
+    if (mode === 'authentic') body.addBackgroundMusic = params.addBgMusic;
 
-    if (mode === 'authentic') {
-      endpoint = `/api/generate/${ragaId}/authentic`;
-      requestBody = { instruments, duration, genre, useAIPrompt: true };
-    } else {
-      endpoint = `/api/generate/${ragaId}`;
-      requestBody = { instruments };
-    }
+    updateBanner(`Generating ${raga.name}`, steps[0].text);
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(body)
     });
+
     const data = await response.json();
 
     if (!data.success) {
-      throw new Error(data.error);
+      bannerError(data.error || 'Generation failed');
+      resetGenerationState();
+      return;
     }
 
     const taskId = data.taskId;
-
-    if (mode === 'authentic') {
-      if (data.referenceAudio) referenceAudioUrl = data.referenceAudio;
-      if (data.midiFile) midiFileUrl = data.midiFile;
+    if (taskId) {
+      await pollGenerationStatus(taskId, genMode, genContext);
+    } else if (data.tracks) {
+      handleGenerationComplete(data, raga);
     }
+  } catch (error) {
+    console.error('Generation error:', error);
+    bannerError('Network error. Please try again.');
+    resetGenerationState();
+  }
+}
 
-    // Update to step 2 - audio building / processing
-    if (mode === 'authentic') {
-      updateGenerationStatus(1, statusMode, data.melody ? `${data.melody.noteCount} notes generated` : null);
-    } else {
-      updateGenerationStatus(1, statusMode);
-    }
+async function pollGenerationStatus(taskId, genMode, genContext) {
+  const steps = GENERATION_STEPS[genMode] || GENERATION_STEPS.standard;
+  const raga = genContext.raga;
+  let stepIndex = 1;
+  const maxAttempts = 120;
 
-    let attempts = 0;
-    const maxAttempts = 60;
-    const pollInterval = 5000;
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
-    while (attempts < maxAttempts) {
-      attempts++;
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    const currentStep = steps[Math.min(stepIndex, steps.length - 1)];
+    updateBanner(`Generating ${raga.name}`, `${currentStep.step}/${currentStep.total} · ${currentStep.phase}`);
 
-      const statusResponse = await fetch(`/api/status/${taskId}`);
-      const statusData = await statusResponse.json();
+    try {
+      const response = await fetch(`/api/status/${taskId}`);
+      const data = await response.json();
 
-      if (!statusData.success) {
-        throw new Error(statusData.error || 'Status check failed');
+      if (data.success && data.status === 'complete') {
+        const finalStep = steps[steps.length - 1];
+        updateBanner(`Generating ${raga.name}`, `${finalStep.step}/${finalStep.total} · Downloading...`);
+        await downloadTrack(taskId, genContext);
+        return;
+      } else if (data.status === 'error') {
+        bannerError(data.error || data.errorMessage || 'Unknown error');
+        resetGenerationState();
+        return;
       }
-
-      const status = statusData.status;
-      console.log(`Poll ${attempts}: ${status}`);
-
-      if (status === 'PENDING') {
-        updateGenerationStatus(2, statusMode, `Processing... (${attempts * 5}s)`);
-      } else if (status === 'TEXT_SUCCESS') {
-        updateGenerationStatus(2, statusMode, 'Processing audio...');
-      } else if (status === 'FIRST_SUCCESS') {
-        updateGenerationStatus(2, statusMode, 'Almost there...');
-      } else if (status === 'SUCCESS' || status === 'complete') {
-        updateGenerationStatus(3, statusMode, 'Downloading track...');
-        break;
-      } else if (status === 'FAILED' || status === 'error') {
-        throw new Error(statusData.errorMessage || 'Generation failed');
-      }
+    } catch (error) {
+      console.error('Status poll error:', error);
     }
 
-    if (attempts >= maxAttempts) {
-      throw new Error('Generation timed out. Check status later.');
-    }
+    if (i % 3 === 0 && stepIndex < steps.length - 1) stepIndex++;
+  }
 
-    const downloadResponse = await fetch(`/api/download/${taskId}`, {
+  bannerError('Generation timed out');
+  resetGenerationState();
+}
+
+async function downloadTrack(taskId, genContext) {
+  const raga = genContext.raga;
+  try {
+    const response = await fetch(`/api/download/${taskId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ragaName: state.currentRaga.name,
-        ragaId: ragaId,
-        instruments: instruments,
-        genre: genre,
-        referenceAudioUrl: referenceAudioUrl,
-        midiFileUrl: midiFileUrl,
+        ragaName: raga.name,
+        ragaId: raga.id,
+        instruments: genContext.instruments,
+        genre: genContext.genreId,
       }),
     });
-    const downloadData = await downloadResponse.json();
+    const data = await response.json();
 
-    if (!downloadData.success) {
-      throw new Error(downloadData.error);
-    }
-
-    if (addBackgroundMusic && downloadData.tracks && downloadData.tracks.length > 0) {
-      const baseTrack = downloadData.tracks[0];
-      generatedTrackUrl = baseTrack.url;
-
-      updateGenerationStatus(3, statusMode, 'Adding background music...');
-
-      const remixResponse = await fetch(`/api/remix/${ragaId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          audioUrl: generatedTrackUrl,
-          ragaName: state.currentRaga.name,
-          instruments: instruments,
-          referenceAudioUrl: referenceAudioUrl,
-          midiFileUrl: midiFileUrl,
-        }),
-      });
-      const remixData = await remixResponse.json();
-
-      if (!remixData.success) {
-        console.warn('Remix failed, using base track:', remixData.error);
-        updateGenerationStatus(4, statusMode, 'Background music failed, using base track...');
-      } else {
-        const remixTaskId = remixData.taskId;
-        let remixAttempts = 0;
-        const remixMaxAttempts = 40;
-
-        while (remixAttempts < remixMaxAttempts) {
-          remixAttempts++;
-          await new Promise(resolve => setTimeout(resolve, pollInterval));
-
-          const remixStatusResponse = await fetch(`/api/status/${remixTaskId}`);
-          const remixStatusData = await remixStatusResponse.json();
-
-          if (!remixStatusData.success) {
-            console.warn('Remix status check failed');
-            break;
-          }
-
-          const remixStatus = remixStatusData.status;
-          console.log(`Remix poll ${remixAttempts}: ${remixStatus}`);
-
-          if (remixStatus === 'PENDING') {
-            updateGenerationStatus(3, statusMode, `Adding background music... (${remixAttempts * 5}s)`);
-          } else if (remixStatus === 'SUCCESS' || remixStatus === 'complete') {
-            updateGenerationStatus(4, statusMode, 'Downloading final track...');
-
-            const remixDownloadResponse = await fetch(`/api/remix/download/${remixTaskId}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                ragaName: state.currentRaga.name,
-                ragaId: ragaId,
-                instruments: instruments,
-                genre: genre,
-                referenceAudioUrl: referenceAudioUrl,
-                midiFileUrl: midiFileUrl,
-                originalAudioUrl: generatedTrackUrl,
-              }),
-            });
-            const remixDownloadData = await remixDownloadResponse.json();
-
-            if (remixDownloadData.success && remixDownloadData.tracks?.length > 0) {
-              const remixedTrack = remixDownloadData.tracks[0];
-              state.currentRaga.audioUrl = remixedTrack.url;
-              state.currentRaga.referenceAudioUrl = referenceAudioUrl;
-              state.currentRaga.midiFileUrl = midiFileUrl;
-              state.currentRaga.instruments = instruments;
-              elements.playBtn.classList.remove('hidden');
-              updateGenerationStatus(4, statusMode, 'Track with background music ready!');
-
-              fetchLibraryTracks();
-              playTrack(state.currentRaga);
-              return;
-            }
-            break;
-          } else if (remixStatus === 'FAILED' || remixStatus === 'error') {
-            console.warn('Remix generation failed');
-            break;
-          }
-        }
-
-        updateGenerationStatus(4, statusMode, 'Using base track...');
-      }
-    }
-
-    if (downloadData.tracks && downloadData.tracks.length > 0) {
-      const track = downloadData.tracks[0];
-      state.currentRaga.audioUrl = track.url;
-      state.currentRaga.referenceAudioUrl = track.referenceAudioUrl;
-      state.currentRaga.midiFileUrl = track.midiFileUrl;
-      state.currentRaga.instruments = track.instruments;
-      elements.playBtn.classList.remove('hidden');
-      const finalStepIndex = GENERATION_STEPS[statusMode].length - 1;
-      updateGenerationStatus(finalStepIndex, statusMode, 'Track ready!');
-
-      fetchLibraryTracks();
-      playTrack(state.currentRaga);
+    if (data.success) {
+      handleGenerationComplete(data, raga);
+    } else {
+      bannerError(data.error || 'Download failed');
+      resetGenerationState();
     }
   } catch (error) {
-    console.error('Generation failed:', error);
-    if (elements.statusPhase) elements.statusPhase.textContent = 'Error';
-    if (elements.statusText) elements.statusText.textContent = error.message;
-    if (elements.generationProgressFill) elements.generationProgressFill.style.width = '0%';
-  } finally {
-    state.generatingRagas.delete(ragaId);
-    updateGenerateButton(false);
+    console.error('Download error:', error);
+    bannerError('Download failed');
+    resetGenerationState();
   }
 }
 
-// ============================================
-// Render Functions
-// ============================================
-function renderRagas() {
-  elements.morningRagas.innerHTML = '';
-  elements.afternoonRagas.innerHTML = '';
-  elements.eveningRagas.innerHTML = '';
-  elements.nightRagas.innerHTML = '';
-  elements.devotionalRagas.innerHTML = '';
-  elements.romanticRagas.innerHTML = '';
-  elements.peacefulRagas.innerHTML = '';
-  elements.seriousRagas.innerHTML = '';
-  elements.allRagas.innerHTML = '';
+function handleGenerationComplete(data, raga) {
+  const tracks = data.tracks || [];
+  if (tracks.length > 0) {
+    const track = tracks[0];
+    state.currentTrack = track;
 
-  state.ragas.forEach(raga => {
-    const card = createRagaCard(raga);
+    // Show completion in banner with play button
+    bannerComplete(track, raga);
 
-    elements.allRagas.appendChild(card.cloneNode(true));
+    // Auto-play
+    playTrack(track.url || track.audio_url, raga);
 
-    const time = raga.time.toLowerCase();
-    if (time.includes('early morning') || time.includes('morning')) {
-      elements.morningRagas.appendChild(card.cloneNode(true));
-    }
-    if (time.includes('afternoon') || time.includes('late morning')) {
-      elements.afternoonRagas.appendChild(card.cloneNode(true));
-    }
-    if (time.includes('evening')) {
-      elements.eveningRagas.appendChild(card.cloneNode(true));
-    }
-    if (time.includes('night')) {
-      elements.nightRagas.appendChild(card.cloneNode(true));
-    }
-    if (time.includes('any')) {
-      elements.morningRagas.appendChild(card.cloneNode(true));
-      elements.eveningRagas.appendChild(card.cloneNode(true));
-    }
-
-    raga.mood.forEach(mood => {
-      const moodLower = mood.toLowerCase();
-      if (moodLower.includes('devotional') || moodLower.includes('spiritual')) {
-        appendIfNotExists(elements.devotionalRagas, card, raga.id);
-      }
-      if (moodLower.includes('romantic') || moodLower.includes('love') || moodLower.includes('longing')) {
-        appendIfNotExists(elements.romanticRagas, card, raga.id);
-      }
-      if (moodLower.includes('peaceful') || moodLower.includes('calm') || moodLower.includes('serene') || moodLower.includes('meditative')) {
-        appendIfNotExists(elements.peacefulRagas, card, raga.id);
-      }
-      if (moodLower.includes('serious') || moodLower.includes('majestic') || moodLower.includes('mysterious')) {
-        appendIfNotExists(elements.seriousRagas, card, raga.id);
-      }
-    });
-  });
-
-  document.querySelectorAll('.raga-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (!e.target.closest('.raga-card-generate')) {
-        const ragaId = card.dataset.id;
-        const raga = state.ragas.find(r => r.id === ragaId);
-        if (raga) openModal(raga);
-      }
-    });
-  });
-}
-
-function appendIfNotExists(container, card, id) {
-  if (!container.querySelector(`[data-id="${id}"]`)) {
-    container.appendChild(card.cloneNode(true));
-  }
-}
-
-function createRagaCard(raga) {
-  const card = document.createElement('div');
-  card.className = 'raga-card';
-  card.dataset.id = raga.id;
-  card.dataset.time = raga.time;
-
-  card.innerHTML = `
-    <div class="raga-artwork">${musicNoteIcon}</div>
-    <div class="raga-card-info">
-      <div class="raga-card-title">${raga.name}</div>
-      <div class="raga-card-subtitle">${raga.thaat}</div>
-    </div>
-    <button class="raga-card-generate" title="Generate" onclick="event.stopPropagation(); generateFromCard('${raga.id}')">
-      <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-    </button>
-  `;
-
-  return card;
-}
-
-// ============================================
-// Modal Functions
-// ============================================
-async function openModal(raga) {
-  state.currentRaga = raga;
-
-  elements.modalTitle.textContent = `Raga ${raga.name}`;
-  elements.modalThaat.textContent = `${raga.thaat} Thaat`;
-  elements.modalArtwork.innerHTML = musicNoteIcon;
-  elements.modalTime.textContent = raga.time;
-  elements.modalMood.textContent = raga.mood.join(', ');
-  elements.modalScaleIndian.textContent = raga.scaleIndian;
-  elements.modalScaleWestern.textContent = raga.westernNotes;
-  elements.modalMode.textContent = raga.westernMode;
-  elements.modalDescription.textContent = raga.description;
-
-  elements.generateBtn.classList.remove('hidden');
-  elements.playBtn.classList.add('hidden');
-  elements.generationStatus.classList.add('hidden');
-
-  // Hide share button for new ragas (not from library)
-  const modalShareBtn = document.getElementById('modal-share-btn');
-  if (modalShareBtn) {
-    modalShareBtn.classList.add('hidden');
-  }
-
-  // Hide artifact buttons for new ragas (not from library)
-  if (elements.artifactButtons) {
-    elements.artifactButtons.classList.add('hidden');
-  }
-
-  if (raga.audioUrl) {
-    elements.playBtn.classList.remove('hidden');
-  }
-
-  // Switch to Generate tab for new ragas
-  switchModalTab('generate');
-
-  elements.modal.classList.remove('hidden');
-  await suggestGenreForRaga(raga.id);
-}
-
-function closeModal() {
-  elements.modal.classList.add('hidden');
-  state.currentRaga = null;
-}
-
-function updateGenerateButton(isGenerating) {
-  if (isGenerating) {
-    elements.generateBtn.classList.add('hidden');
-    elements.generationStatus.classList.remove('hidden');
-  } else {
-    elements.generateBtn.classList.remove('hidden');
-    elements.generationStatus.classList.add('hidden');
-  }
-}
-
-// ============================================
-// Audio Functions
-// ============================================
-function playTrack(raga) {
-  if (!raga.audioUrl) return;
-
-  elements.audioPlayer.src = raga.audioUrl;
-  elements.audioPlayer.play();
-  state.isPlaying = true;
-
-  // Update mini player
-  elements.nowPlaying.classList.remove('hidden');
-  elements.miniPlayerTitle.textContent = `Raga ${raga.name}`;
-  elements.miniPlayerSubtitle.textContent = raga.thaat || 'Hindustani Classical';
-
-  // Update icons
-  updatePlayPauseIcons(true);
-
-  // Update full player
-  updateFullPlayer(raga);
-
-  // Start waveform if visible
-  if (state.fullPlayerVisible && waveformVisualizer) {
-    waveformVisualizer.start();
-  }
-}
-
-function togglePlayPause() {
-  if (state.isPlaying) {
-    elements.audioPlayer.pause();
-    if (waveformVisualizer) waveformVisualizer.stop();
-  } else {
-    elements.audioPlayer.play();
-    if (state.fullPlayerVisible && waveformVisualizer) {
-      waveformVisualizer.start();
-    }
-  }
-  state.isPlaying = !state.isPlaying;
-  updatePlayPauseIcons(state.isPlaying);
-}
-
-function playPreviousTrack() {
-  if (state.libraryTracks.length === 0) return;
-
-  let newIndex = state.currentTrackIndex - 1;
-  if (newIndex < 0) newIndex = state.libraryTracks.length - 1;
-  playLibraryTrack(newIndex);
-}
-
-function playNextTrack() {
-  if (state.libraryTracks.length === 0) return;
-
-  let newIndex = state.currentTrackIndex + 1;
-  if (newIndex >= state.libraryTracks.length) newIndex = 0;
-  playLibraryTrack(newIndex);
-}
-
-// ============================================
-// Filter Panel
-// ============================================
-const filterLabels = {
-  library: 'My Library',
-  time: 'By Time',
-  mood: 'By Mood',
-  all: 'All Ragas'
-};
-
-function openFilterPanel() {
-  elements.filterPanel.classList.add('open');
-  elements.filterPanelBackdrop.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeFilterPanel() {
-  elements.filterPanel.classList.remove('open');
-  elements.filterPanelBackdrop.classList.add('hidden');
-  document.body.style.overflow = '';
-}
-
-function updateFilterTags(category) {
-  const label = filterLabels[category] || category;
-  elements.filterTags.innerHTML = `
-    <span class="filter-tag" data-filter="${category}">
-      <span>${label}</span>
-      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-    </span>
-  `;
-}
-
-function switchCategory(category) {
-  // Update filter items active state
-  elements.filterItems.forEach(item => {
-    item.classList.toggle('active', item.dataset.category === category);
-  });
-
-  // Update sections visibility
-  elements.librarySection.classList.toggle('hidden', category !== 'library');
-  elements.timeSection.classList.toggle('hidden', category !== 'time');
-  elements.moodSection.classList.toggle('hidden', category !== 'mood');
-  elements.allSection.classList.toggle('hidden', category !== 'all');
-
-  // Update filter tags in header
-  updateFilterTags(category);
-
-  // Close filter panel
-  closeFilterPanel();
-
-  if (category === 'library') {
+    // Refresh library
     fetchLibraryTracks();
+  } else {
+    bannerError('No tracks returned');
+  }
+
+  resetGenerationState();
+}
+
+function resetGenerationState() {
+  state.generatingRagas.clear();
+  updateRagaCardStates();
+  // Reset in-sheet progress (in case they reopen)
+  el.generateBtn.classList.remove('hidden');
+  el.genProgress.classList.add('hidden');
+  el.genProgress.classList.remove('active');
+  el.genProgressCircle.style.strokeDashoffset = 2 * Math.PI * 26;
+}
+
+function updateRagaCardStates() {
+  $$('.raga-card').forEach(card => {
+    const ragaId = card.dataset.ragaId;
+    card.classList.toggle('generating', state.generatingRagas.has(ragaId));
+  });
+}
+
+// ============================================
+// Genre/Duration Chip Helpers
+// ============================================
+function setGenreChipActive(value) {
+  $$('.genre-chip').forEach(c => c.classList.toggle('active', c.dataset.value === value));
+}
+
+// ============================================
+// Progress bar updates
+// ============================================
+function updateProgress() {
+  if (!el.audioPlayer.duration) return;
+  const pct = (el.audioPlayer.currentTime / el.audioPlayer.duration) * 100;
+
+  // Mini player
+  if (el.miniProgressFill) el.miniProgressFill.style.width = `${pct}%`;
+
+  // Full player
+  if (el.fpProgressFill) el.fpProgressFill.style.width = `${pct}%`;
+  if (el.fpProgressKnob) el.fpProgressKnob.style.left = `${pct}%`;
+  if (el.fpCurrentTime) el.fpCurrentTime.textContent = formatTime(el.audioPlayer.currentTime);
+  if (el.fpDuration) el.fpDuration.textContent = formatTime(el.audioPlayer.duration);
+
+  // Home radio player
+  if (el.homeRadioProgressFill) el.homeRadioProgressFill.style.width = `${pct}%`;
+}
+
+// ============================================
+// Autopilot Radio Mode
+// ============================================
+function toggleAutopilot() {
+  state.autopilot = !state.autopilot;
+  if (state.autopilot) {
+    startAutopilot();
+  } else {
+    stopAutopilot();
+  }
+}
+
+function startAutopilot() {
+  const tod = getTimeOfDay();
+  state.autopilotLastBlock = tod;
+
+  // Play a random track for current time block if not already playing
+  if (!state.isPlaying) {
+    const tracksForBlock = state.libraryTracks.filter(t => {
+      const raga = t.raga;
+      return raga && getRagaTimeCategory(raga) === tod;
+    });
+    if (tracksForBlock.length > 0) {
+      const track = tracksForBlock[Math.floor(Math.random() * tracksForBlock.length)];
+      const idx = state.libraryTracks.indexOf(track);
+      playLibraryTrack(idx);
+    } else if (state.libraryTracks.length > 0) {
+      // Fallback: play any available track
+      playLibraryTrack(0);
+    }
+  }
+
+  // Check every 30 seconds if the time block changed
+  state.autopilotInterval = setInterval(autopilotTick, 30000);
+  updateAutopilotUI();
+  showToast('Autopilot enabled — playing ragas for this hour');
+}
+
+function stopAutopilot() {
+  if (state.autopilotInterval) {
+    clearInterval(state.autopilotInterval);
+    state.autopilotInterval = null;
+  }
+  updateAutopilotUI();
+  showToast('Autopilot disabled');
+}
+
+function autopilotTick() {
+  if (!state.autopilot) return;
+  const tod = getTimeOfDay();
+
+  if (tod !== state.autopilotLastBlock) {
+    // Time block changed — update UI and transition to new ragas
+    state.autopilotLastBlock = tod;
+    updateTimeHero();
+    renderHome();
+
+    const tracksForBlock = state.libraryTracks.filter(t => {
+      const raga = t.raga;
+      return raga && getRagaTimeCategory(raga) === tod;
+    });
+
+    if (tracksForBlock.length > 0) {
+      const track = tracksForBlock[Math.floor(Math.random() * tracksForBlock.length)];
+      const idx = state.libraryTracks.indexOf(track);
+      playLibraryTrack(idx);
+      showToast(`Transitioning to ${tod} ragas`);
+    }
+  } else if (!state.isPlaying) {
+    // Resume playing if paused in autopilot mode
+    const tracksForBlock = state.libraryTracks.filter(t => {
+      const raga = t.raga;
+      return raga && getRagaTimeCategory(raga) === tod;
+    });
+    if (tracksForBlock.length > 0) {
+      const track = tracksForBlock[Math.floor(Math.random() * tracksForBlock.length)];
+      const idx = state.libraryTracks.indexOf(track);
+      playLibraryTrack(idx);
+    }
+  }
+}
+
+function updateAutopilotUI() {
+  const active = state.autopilot;
+
+  if (el.autopilotToggle) el.autopilotToggle.classList.toggle('active', active);
+  if (el.miniAutopilotBadge) el.miniAutopilotBadge.classList.toggle('hidden', !active);
+  if (el.homeRadioAutoBadge) el.homeRadioAutoBadge.classList.toggle('hidden', !active);
+
+  updateHomePlayer();
+}
+
+function updateHomePlayer() {
+  if (!el.homeRadioTitle) return;
+
+  if (state.currentTrack) {
+    const raga = state.currentTrack.raga;
+    const ragaName = raga ? raga.name : state.currentTrack.ragaName || 'Unknown';
+    const genre = state.currentTrack.genre || 'indianClassical';
+    el.homeRadioTitle.textContent = `Raga ${ragaName}`;
+    el.homeRadioMeta.textContent = getGenreDisplayName(genre);
+  } else if (state.autopilot) {
+    el.homeRadioTitle.textContent = 'Autopilot Active';
+    el.homeRadioMeta.textContent = 'Waiting for tracks to be generated…';
+  } else {
+    el.homeRadioTitle.textContent = 'Nothing playing';
+    el.homeRadioMeta.textContent = 'Tap a raga or enable Autopilot';
+  }
+
+  // Sync play/pause icon on home radio player
+  const playBtn = el.homeRadioPlayBtn;
+  if (playBtn) {
+    playBtn.querySelector('.icon-play')?.classList.toggle('hidden', state.isPlaying);
+    playBtn.querySelector('.icon-pause')?.classList.toggle('hidden', !state.isPlaying);
+  }
+
+  // Animate bars when playing
+  if (el.homeRadioBars) {
+    el.homeRadioBars.classList.toggle('playing', state.isPlaying);
   }
 }
 
 // ============================================
-// Global Functions
+// Event Bindings
 // ============================================
-window.generateFromCard = async function(ragaId) {
-  const raga = state.ragas.find(r => r.id === ragaId);
-  if (raga) {
-    state.currentRaga = raga;
-    openModal(raga);
-    await generateRaga(ragaId);
-  }
-};
+function init() {
+  // Update time hero
+  updateTimeHero();
 
-// ============================================
-// Event Listeners
-// ============================================
-function initEventListeners() {
-  // Filter Panel
-  elements.filterBtn?.addEventListener('click', openFilterPanel);
-  elements.filterPanelClose?.addEventListener('click', closeFilterPanel);
-  elements.filterPanelBackdrop?.addEventListener('click', closeFilterPanel);
-
-  // Filter items in panel
-  elements.filterItems.forEach(item => {
-    item.addEventListener('click', () => switchCategory(item.dataset.category));
+  // Tab navigation
+  $$('.tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
 
-  // Filter tag click (to reopen panel)
-  elements.filterTags?.addEventListener('click', (e) => {
-    const tag = e.target.closest('.filter-tag');
-    if (tag) {
-      openFilterPanel();
-    }
+  // Search
+  el.searchInput.addEventListener('input', (e) => {
+    state.searchQuery = e.target.value;
+    el.searchClear.classList.toggle('hidden', !state.searchQuery);
+    renderExplore();
+  });
+  el.searchClear.addEventListener('click', () => {
+    state.searchQuery = '';
+    el.searchInput.value = '';
+    el.searchClear.classList.add('hidden');
+    renderExplore();
   });
 
-  // Modal
-  elements.modalClose.addEventListener('click', closeModal);
-  document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
-
-  // Modal Tab Switching
-  document.querySelectorAll('.modal-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      switchModalTab(tab.dataset.tab);
+  // Filter chips
+  $$('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      $$('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.activeFilter = chip.dataset.filter;
+      renderExplore();
     });
   });
 
-  // Copy Modal (share fallback)
-  const copyModalClose = document.getElementById('copy-modal-close');
-  const copyModalBackdrop = document.querySelector('#copy-modal .modal-backdrop');
-  const copyModalBtn = document.getElementById('copy-modal-btn');
+  // Sheet close
+  el.sheetBackdrop.addEventListener('click', closeSheet);
+  $('sheet-close-btn')?.addEventListener('click', closeSheet);
+  $('sheet-handle-area')?.addEventListener('click', (e) => {
+    if (!e.target.closest('.sheet-close-btn')) closeSheet();
+  });
 
-  if (copyModalClose) copyModalClose.addEventListener('click', closeCopyModal);
-  if (copyModalBackdrop) copyModalBackdrop.addEventListener('click', closeCopyModal);
-  if (copyModalBtn) copyModalBtn.addEventListener('click', copyFromModal);
+  // Sheet tabs
+  $$('.sheet-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchSheetTab(tab.dataset.tab));
+  });
+
+  // Segment control (mode)
+  $$('#mode-control .segment').forEach(seg => {
+    seg.addEventListener('click', () => {
+      $$('#mode-control .segment').forEach(s => s.classList.remove('active'));
+      seg.classList.add('active');
+      // Update indicator
+      const idx = seg.dataset.value === 'authentic' ? 1 : 0;
+      const indicator = document.querySelector('#mode-control .segment-indicator');
+      if (indicator) indicator.style.transform = `translateX(${idx * 100}%)`;
+    });
+  });
+
+  // Genre chips
+  $$('.genre-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      setGenreChipActive(chip.dataset.value);
+      state.currentGenre = chip.dataset.value;
+      fetchGenreInstruments(chip.dataset.value);
+    });
+  });
+
+  // Duration chips
+  $$('.duration-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      $$('.duration-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
 
   // Generate button
-  elements.generateBtn.addEventListener('click', () => {
-    if (state.currentRaga) {
-      generateRaga(state.currentRaga.id);
-    }
-  });
+  el.generateBtn.addEventListener('click', generateTrack);
 
-  // Mode segmented control
-  setupSegmentedControl('mode-control', (mode) => {
-    const options = elements.generationOptions;
-    if (mode === 'authentic') {
-      options?.classList.remove('standard-mode');
-    } else {
-      options?.classList.add('standard-mode');
-    }
-  });
-
-  // Genre segmented control
-  setupSegmentedControl('genre-control', async (genreId) => {
-    state.currentGenre = genreId;
-    await fetchGenreInstruments(genreId);
-  });
-
-  // Play button in modal
-  elements.playBtn.addEventListener('click', () => {
-    if (state.currentRaga) {
-      playTrack(state.currentRaga);
-      closeModal();
-    }
-  });
+  // Generation banner close
+  el.genBannerClose.addEventListener('click', hideBanner);
 
   // Mini player controls
-  elements.playPauseBtn.addEventListener('click', (e) => {
+  el.miniPlayBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     togglePlayPause();
   });
+  el.miniPlayer.addEventListener('click', openFullPlayer);
 
-  // Click on mini player to open full player
-  elements.nowPlaying.addEventListener('click', (e) => {
-    if (!e.target.closest('.control-btn')) {
+  // Full player controls
+  el.fullPlayerClose.addEventListener('click', closeFullPlayer);
+  el.fpPlayBtn.addEventListener('click', togglePlayPause);
+  el.fpPrev.addEventListener('click', playPrevTrack);
+  el.fpNext.addEventListener('click', playNextTrack);
+
+  // Full player share
+  el.fpShare.addEventListener('click', () => {
+    if (state.currentTrack) shareTrack(state.currentTrack);
+  });
+
+  // Progress seek
+  el.fpProgressTrack.addEventListener('click', (e) => {
+    const rect = el.fpProgressTrack.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    if (el.audioPlayer.duration) {
+      el.audioPlayer.currentTime = pct * el.audioPlayer.duration;
+    }
+  });
+
+  // Audio events
+  el.audioPlayer.addEventListener('timeupdate', updateProgress);
+  el.audioPlayer.addEventListener('ended', () => {
+    state.isPlaying = false;
+    updatePlayButtons(false);
+    updateHomePlayer();
+    if (waveformVisualizer) waveformVisualizer.stop();
+    if (state.autopilot) {
+      // In autopilot: play a random track for the current time block
+      const tod = getTimeOfDay();
+      const tracksForBlock = state.libraryTracks.filter(t => {
+        const raga = t.raga;
+        return raga && getRagaTimeCategory(raga) === tod;
+      });
+      if (tracksForBlock.length > 0) {
+        const track = tracksForBlock[Math.floor(Math.random() * tracksForBlock.length)];
+        playLibraryTrack(state.libraryTracks.indexOf(track));
+      } else {
+        playNextTrack();
+      }
+    } else {
+      playNextTrack();
+    }
+  });
+
+  // Copy modal
+  $('copy-modal-close')?.addEventListener('click', closeCopyModal);
+  $('copy-modal-btn')?.addEventListener('click', () => {
+    const textarea = $('copy-modal-text');
+    if (textarea) {
+      textarea.select();
+      document.execCommand('copy');
+      showToast('Copied to clipboard!');
+      closeCopyModal();
+    }
+  });
+
+  // Copy modal backdrop
+  document.querySelector('.copy-modal-backdrop')?.addEventListener('click', closeCopyModal);
+
+  // Autopilot toggle
+  el.autopilotToggle?.addEventListener('click', toggleAutopilot);
+
+  // Home radio player controls
+  el.homeRadioPlayBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (state.currentTrack) {
+      togglePlayPause();
+    } else if (state.autopilot) {
+      startAutopilot();
+    }
+  });
+  $('home-radio-player')?.addEventListener('click', () => {
+    if (state.currentTrack && !state.isPlaying) {
+      // Do nothing — use play button
+    } else if (state.currentTrack) {
       openFullPlayer();
     }
   });
 
-  // Full player controls
-  elements.fullPlayerClose.addEventListener('click', closeFullPlayer);
-  elements.fullPlayerPlayBtn.addEventListener('click', togglePlayPause);
-  elements.fullPlayerPrev.addEventListener('click', playPreviousTrack);
-  elements.fullPlayerNext.addEventListener('click', playNextTrack);
+  // Init waveform
+  waveformVisualizer = new WaveformVisualizer(el.waveformCanvas);
+  waveformVisualizer.drawStatic();
 
-  // Audio progress updates
-  elements.audioPlayer.addEventListener('timeupdate', () => {
-    const progress = (elements.audioPlayer.currentTime / elements.audioPlayer.duration) * 100;
-    elements.progressFill.style.width = `${progress}%`;
-    elements.fullPlayerProgressFill.style.width = `${progress}%`;
-    elements.fullPlayerCurrentTime.textContent = formatTime(elements.audioPlayer.currentTime);
-  });
-
-  elements.audioPlayer.addEventListener('loadedmetadata', () => {
-    elements.fullPlayerDuration.textContent = formatTime(elements.audioPlayer.duration);
-  });
-
-  elements.audioPlayer.addEventListener('ended', () => {
-    state.isPlaying = false;
-    updatePlayPauseIcons(false);
-    elements.progressFill.style.width = '0%';
-    elements.fullPlayerProgressFill.style.width = '0%';
-    if (waveformVisualizer) waveformVisualizer.stop();
-  });
-
-  // Keyboard shortcuts
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      if (state.fullPlayerVisible) {
-        closeFullPlayer();
-      } else {
-        closeModal();
-      }
-    }
-    if (e.key === ' ' && !e.target.matches('input, textarea, select')) {
-      e.preventDefault();
-      togglePlayPause();
-    }
-  });
-
-  // Swipe gesture for full player (touch devices)
-  let touchStartY = 0;
-  elements.fullPlayer.addEventListener('touchstart', (e) => {
-    touchStartY = e.touches[0].clientY;
-  }, { passive: true });
-
-  elements.fullPlayer.addEventListener('touchend', (e) => {
-    const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchEndY - touchStartY;
-    if (diff > 100) {
-      closeFullPlayer();
-    }
-  }, { passive: true });
+  // Fetch data
+  fetchRagas()
+    .catch(e => showToast('Failed to load ragas: ' + e.message));
+  fetchGenres();
+  fetchLibraryTracks();
+  fetchFeatures();
+  fetchGenreInstruments('indianClassical');
 }
 
-// ============================================
-// Initialize
-// ============================================
-document.addEventListener('DOMContentLoaded', async () => {
-  // Initialize waveform visualizer
-  if (elements.waveformCanvas) {
-    waveformVisualizer = new WaveformVisualizer(elements.waveformCanvas);
-    waveformVisualizer.drawStatic();
-  }
-
-  initEventListeners();
-
-  // Fetch feature flags first to configure UI
-  await fetchFeatures();
-
-  // Fetch data in parallel
-  await Promise.all([
-    fetchRagas(),
-    fetchLibraryTracks(),
-    fetchGenres(),
-    fetchGenreInstruments('indianClassical')
-  ]);
+// Global error handler for debugging on mobile
+window.onerror = function(msg, url, line, col, error) {
+  showToast('JS Error: ' + msg);
+  return false;
+};
+window.addEventListener('unhandledrejection', function(e) {
+  showToast('Promise Error: ' + (e.reason?.message || e.reason));
 });
+
+// Start — support both direct load and dynamic injection (where DOMContentLoaded already fired)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}

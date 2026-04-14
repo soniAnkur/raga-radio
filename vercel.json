@@ -1,22 +1,3 @@
 {
-  "version": 2,
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
-    },
-    {
-      "source": "/output/(.*)",
-      "destination": "/api/index.js"
-    },
-    {
-      "source": "/((?!css|js|images|.*\\.html$).*)",
-      "destination": "/api/index.js"
-    }
-  ],
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 60
-    }
-  }
+  "framework": "nextjs"
 }

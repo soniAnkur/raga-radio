@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raga Radio — Song Creation Pipeline</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --bg-card: #12121a;
+  --bg-card-alt: #16161f;
+  --border: #1e1e2e;
+  --border-accent: #2a2a3e;
+  --text: #e0dfe6;
+  --text-dim: #6e6d7a;
+  --text-muted: #44435a;
+  --green: #3dd68c;
+  --green-dim: #1a3d2e;
+  --yellow: #f0b232;
+  --yellow-dim: #3d3018;
+  --red: #f05252;
+  --red-dim: #3d1a1a;
+  --blue: #4e8ef7;
+  --blue-dim: #1a2a4e;
+  --purple: #9d7af7;
+  --cyan: #4ed8d0;
+  --orange: #e88a3a;
+  --gray: #3a3a4e;
+  --gray-light: #5a5a72;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(77, 142, 247, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(157, 122, 247, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+/* ── Header ── */
+header {
+  text-align: center;
+  margin-bottom: 48px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 42px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+header h1 em {
+  font-style: italic;
+  color: var(--blue);
+}
+
+header p {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+  padding: 16px 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-dot.green { background: var(--green); }
+.legend-dot.yellow { background: var(--yellow); }
+.legend-dot.red { background: var(--red); }
+.legend-dot.blue { background: var(--blue); }
+.legend-dot.gray { background: var(--gray-light); }
+
+/* ── Raga Schema ── */
+.schema-section {
+  margin-bottom: 56px;
+}
+
+.section-label {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.schema-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.schema-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.schema-header h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.schema-header span {
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.schema-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--border);
+}
+
+.schema-field {
+  background: var(--bg-card);
+  padding: 12px 16px;
+  position: relative;
+}
+
+.schema-field .field-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cyan);
+  margin-bottom: 2px;
+}
+
+.schema-field .field-example {
+  font-size: 11px;
+  color: var(--text-dim);
+  word-break: break-word;
+}
+
+.schema-field .usage-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ── Pipeline Columns ── */
+.pipelines {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 56px;
+}
+
+@media (max-width: 1100px) {
+  .pipelines { grid-template-columns: 1fr; }
+}
+
+.pipeline {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.pipeline-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.pipeline-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.pipeline.legacy .pipeline-header::before { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
+.pipeline.authentic .pipeline-header::before { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+
+.pipeline-header h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+
+.pipeline-header .endpoint {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.pipeline-body {
+  padding: 24px;
+}
+
+/* ── Steps ── */
+.step {
+  position: relative;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+
+.step:hover {
+  border-color: var(--border-accent);
+}
+
+.step:last-child { margin-bottom: 0; }
+
+.step-num {
+  position: absolute;
+  top: -8px;
+  left: 16px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.step-num.infra { color: var(--gray-light); border-color: var(--gray); }
+.step-num.theory { color: var(--blue); border-color: var(--blue-dim); }
+.step-num.api { color: var(--purple); border-color: rgba(157,122,247,0.2); }
+
+.step h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step .detail {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.step .detail code {
+  color: var(--cyan);
+  font-size: 10px;
+  background: rgba(78, 216, 208, 0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* ── Arrow connector ── */
+.arrow {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0;
+  color: var(--text-muted);
+  font-size: 16px;
+  position: relative;
+}
+
+.arrow::before {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  background: var(--border);
+  left: 50%;
+}
+
+/* ── Sub-paths ── */
+.sub-paths {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.sub-path {
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card-alt);
+}
+
+.sub-path h5 {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sub-path .detail {
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.sub-path.primary { border-color: rgba(78, 142, 247, 0.25); }
+.sub-path.fallback { border-color: rgba(90, 90, 114, 0.4); }
+
+/* ── Theory Loss Markers ── */
+.loss-markers {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.loss-tag {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.loss-tag.lost {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(240, 82, 82, 0.2);
+}
+
+.loss-tag.partial {
+  background: var(--yellow-dim);
+  color: var(--yellow);
+  border: 1px solid rgba(240, 178, 50, 0.2);
+}
+
+.loss-tag.ok {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(61, 214, 140, 0.2);
+}
+
+.loss-tag::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.loss-tag.lost::before { background: var(--red); }
+.loss-tag.partial::before { background: var(--yellow); }
+.loss-tag.ok::before { background: var(--green); }
+
+/* ── Failure callout ── */
+.failure-box {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--red-dim);
+  border: 1px solid rgba(240, 82, 82, 0.25);
+  border-left: 3px solid var(--red);
+}
+
+.failure-box h5 {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--red);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.failure-box .detail {
+  font-size: 10px;
+  color: #d09090;
+  line-height: 1.6;
+}
+
+.failure-box code {
+  color: var(--red);
+  font-size: 10px;
+}
+
+/* ── Theory Matrix ── */
+.matrix-section {
+  margin-top: 56px;
+}
+
+.matrix-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.matrix-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.matrix-card thead th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.matrix-card thead th:first-child { padding-left: 24px; }
+
+.matrix-card tbody td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.matrix-card tbody tr:last-child td { border-bottom: none; }
+.matrix-card tbody td:first-child {
+  padding-left: 24px;
+  font-weight: 600;
+  color: var(--cyan);
+  white-space: nowrap;
+}
+
+.matrix-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.matrix-cell .indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.matrix-cell .indicator.red { background: var(--red); }
+.matrix-cell .indicator.yellow { background: var(--yellow); }
+.matrix-cell .indicator.green { background: var(--green); }
+
+.matrix-cell span {
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ── Inline flow arrow text ── */
+.flow-arrow {
+  color: var(--text-muted);
+  margin: 0 3px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .container { padding: 24px 16px 60px; }
+  header h1 { font-size: 28px; }
+  .legend { gap: 16px; padding: 12px 16px; }
+  .sub-paths { grid-template-columns: 1fr; }
+  .schema-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .matrix-card { overflow-x: auto; }
+  .matrix-card table { min-width: 700px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <h1>Raga Radio <em>Pipeline</em></h1>
+    <p>Song Creation Architecture &amp; Theory Preservation Analysis</p>
+  </header>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot green"></div> Theory preserved</div>
+    <div class="legend-item"><div class="legend-dot yellow"></div> Partially preserved</div>
+    <div class="legend-item"><div class="legend-dot red"></div> Theory lost</div>
+    <div class="legend-item"><div class="legend-dot blue"></div> Data flow / processing</div>
+    <div class="legend-item"><div class="legend-dot gray"></div> Infrastructure step</div>
+  </div>
+
+  <!-- Raga Data Schema -->
+  <div class="schema-section">
+    <div class="section-label">Raga Data Schema — 68 Ragas in Database</div>
+    <div class="schema-card">
+      <div class="schema-header">
+        <h3>ragas.js — Source of Truth</h3>
+        <span>Example: Raga Bhairav</span>
+      </div>
+      <div class="schema-grid">
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--green)" title="Well used"></div>
+          <div class="field-name">name</div>
+          <div class="field-example">"Bhairav"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--green)" title="Well used"></div>
+          <div class="field-name">thaat</div>
+          <div class="field-example">"Bhairav"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--green)" title="Well used"></div>
+          <div class="field-name">scaleIndian</div>
+          <div class="field-example">"S r G m P d N"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--yellow)" title="Partially used"></div>
+          <div class="field-name">aaroha</div>
+          <div class="field-example">"S r G m P d N S'"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--yellow)" title="Partially used"></div>
+          <div class="field-name">avaroha</div>
+          <div class="field-example">"S' N d P m G r S"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--yellow)" title="Partially used"></div>
+          <div class="field-name">time (prahar)</div>
+          <div class="field-example">"Early Morning (4–7 AM)"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--green)" title="Well used"></div>
+          <div class="field-name">mood[]</div>
+          <div class="field-example">["Devotional", "Serious"]</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--green)" title="Well used"></div>
+          <div class="field-name">vadi</div>
+          <div class="field-example">"d" (komal Dha)</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--green)" title="Well used"></div>
+          <div class="field-name">samvadi</div>
+          <div class="field-example">"G" (shuddha Ga)</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--green)" title="Well used"></div>
+          <div class="field-name">westernMode</div>
+          <div class="field-example">"Double Harmonic Major"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--red)" title="Mostly lost"></div>
+          <div class="field-name">pakad</div>
+          <div class="field-example">"G m d P, m G r S"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--yellow)" title="Partially used"></div>
+          <div class="field-name">special</div>
+          <div class="field-example">"Andolan on komal Ga"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--red)" title="Never used"></div>
+          <div class="field-name">difficulty</div>
+          <div class="field-example">"Beginner" / "Advanced"</div>
+        </div>
+        <div class="schema-field">
+          <div class="usage-badge" style="background:var(--yellow)" title="Partially used"></div>
+          <div class="field-name">season</div>
+          <div class="field-example">"All Seasons"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Pipeline Columns -->
+  <div class="pipelines">
+
+    <!-- PATH 1: Legacy -->
+    <div class="pipeline legacy">
+      <div class="pipeline-header">
+        <h2>Path 1 — Legacy Generate</h2>
+        <div class="endpoint">POST /api/generate/:id</div>
+      </div>
+      <div class="pipeline-body">
+
+        <!-- Step 1 -->
+        <div class="step">
+          <div class="step-num theory">Step 1</div>
+          <h4>User Selects Raga</h4>
+          <div class="detail">
+            Frontend calls <code>GET /api/ragas/:id</code><br>
+            Loads full raga object from <code>ragas.js</code> (all 14 fields).
+          </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Step 2 -->
+        <div class="step">
+          <div class="step-num theory">Step 2</div>
+          <h4>Build Prompt Payload</h4>
+          <div class="detail">
+            <code>buildPayload(raga)</code> composes three parts:<br><br>
+            <strong>buildStyle()</strong> — mood, time atmosphere, tempo, thaat, mode, generic instrument list. Max 1000 chars.<br><br>
+            <strong>buildPromptText()</strong> — Converts swaras → western notes via <code>swaraConverter</code>. Includes scale, aaroha/avaroha as western note names, vadi/samvadi emphasis, alap→gat structure description.<br><br>
+            <strong>buildNegativeTags()</strong> — Excludes vocals, pop/rock/electronic, notes NOT in the raga scale.
+          </div>
+          <div class="loss-markers">
+            <div class="loss-tag lost">Pakad — never included</div>
+            <div class="loss-tag partial">Aaroha/Avaroha — text mention only</div>
+            <div class="loss-tag partial">Ornaments — style mention only</div>
+            <div class="loss-tag partial">Prahar — style descriptors only</div>
+            <div class="loss-tag ok">Vadi/Samvadi — text emphasis</div>
+            <div class="loss-tag ok">Scale — fully converted</div>
+            <div class="loss-tag lost">Difficulty — ignored</div>
+          </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Step 3 -->
+        <div class="step">
+          <div class="step-num api">Step 3</div>
+          <h4>Suno API — Text-Only Generation</h4>
+          <div class="detail">
+            <code>POST /api/v1/generate</code><br>
+            Sends prompt + style + negativeTags as natural language. Model <code>V5</code>.<br>
+            <code>styleWeight: 0.7</code> · <code>weirdnessConstraint: 0.3</code> · <code>instrumental: true</code><br><br>
+            <strong>No reference audio.</strong> Suno interprets text freely — raga theory depends entirely on Suno's understanding of the prompt.
+          </div>
+          <div class="loss-markers">
+            <div class="loss-tag lost">Suno has no raga knowledge — interprets freely</div>
+          </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Step 4 -->
+        <div class="step">
+          <div class="step-num infra">Step 4</div>
+          <h4>Poll → Download → R2 Upload</h4>
+          <div class="detail">
+            Polls <code>GET /api/v1/generate/record-info</code> every 5s, max 30 attempts.<br>
+            Downloads MP3 tracks on <code>SUCCESS</code>.<br>
+            Uploads to Cloudflare R2 + updates <code>tracks-metadata.json</code>.
+          </div>
+          <div class="failure-box">
+            <h5>⚠ Observed Failure (from logs)</h5>
+            <div class="detail">
+              Status polling reached <code>FIRST_SUCCESS</code> then hit <code>"fetch failed"</code> network error at attempt 13.<br>
+              Returned <code>500</code> to client. <strong>No retry logic, no circuit breaker.</strong><br>
+              The track likely completed on Suno's side but was never downloaded.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PATH 2: Authentic -->
+    <div class="pipeline authentic">
+      <div class="pipeline-header">
+        <h2>Path 2 — Authentic Generate</h2>
+        <div class="endpoint">POST /api/generate/:id/authentic</div>
+      </div>
+      <div class="pipeline-body">
+
+        <!-- Step 1 -->
+        <div class="step">
+          <div class="step-num theory">Step 1</div>
+          <h4>Load Raga + Parse Request</h4>
+          <div class="detail">
+            Loads raga from DB. Reads <code>instruments[]</code>, <code>duration</code>, <code>genre</code>, <code>useAIPrompt</code> from request body. Falls back to <code>suggestGenres()</code> if no genre.
+          </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Step 2: Melody Generation -->
+        <div class="step">
+          <div class="step-num theory">Step 2</div>
+          <h4>Melody Generation</h4>
+          <div class="detail">
+            Generates a note-by-note melody sequence following raga rules. Two sub-paths:
+          </div>
+
+          <div class="sub-paths">
+            <div class="sub-path primary">
+              <h5 style="color:var(--blue)">AI Path — OpenAI</h5>
+              <div class="detail">
+                <code>AIMelodyGenerator</code> with <code>gpt-4o-mini</code><br><br>
+                <strong>Sends to AI:</strong> aaroha, avaroha, vadi, samvadi, pakad, special rules<br><br>
+                <strong>Structure:</strong> Alap (35%) → Jor (35%) → Jhala (30%)<br><br>
+                <strong>Ornaments:</strong><br>
+                · Meend → 6-step pitch glide<br>
+                · Gamak → oscillation pairs<br>
+                · Kan → grace note (15/85 split)<br><br>
+                <strong>Validation:</strong> Checks aaroha/avaroha compliance — <em>warns only, doesn't reject</em>
+              </div>
+              <div class="loss-markers" style="margin-top:8px">
+                <div class="loss-tag partial">Pakad — requested, not validated</div>
+                <div class="loss-tag partial">Aaroha — soft warn</div>
+                <div class="loss-tag partial">Ornaments — micro-steps, no pitch bend</div>
+                <div class="loss-tag lost">Prahar — not used in timing</div>
+                <div class="loss-tag ok">Vadi — 3x weight + velocity</div>
+              </div>
+            </div>
+
+            <div class="sub-path fallback">
+              <h5 style="color:var(--gray-light)">Algorithmic Fallback</h5>
+              <div class="detail">
+                <code>AlapGenerator</code> — 6 fixed phases<br><br>
+                <strong>lower</strong> (30%) → <strong>ascending</strong> (15%) → <strong>middle</strong> (25%) → <strong>upper-touch</strong> (15%) → <strong>descending</strong> (10%) → <strong>return</strong> (5%)<br><br>
+                Weighted random note selection: vadi 3x, samvadi 2x.<br>
+                Soft aaroha/avaroha enforcement — falls back to all notes if no valid choice.
+              </div>
+              <div class="loss-markers" style="margin-top:8px">
+                <div class="loss-tag lost">Pakad — not generated</div>
+                <div class="loss-tag partial">Aaroha — soft, falls back</div>
+                <div class="loss-tag lost">Ornaments — none</div>
+                <div class="loss-tag lost">Prahar — ignored</div>
+                <div class="loss-tag ok">Vadi — weighted 3x</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Step 3: MIDI -->
+        <div class="step">
+          <div class="step-num infra">Step 3</div>
+          <h4>MIDI Build</h4>
+          <div class="detail">
+            <code>buildMidi(events)</code> — Fixed <code>45 BPM</code>. GM instrument <code>104</code> (Sitar).<br>
+            Converts note events to MIDI ticks. No CC events, <strong>no pitch bend</strong> (meends become staccato steps). Uploaded to R2.
+          </div>
+          <div class="loss-markers">
+            <div class="loss-tag partial">Ornaments degraded — meend glides become discrete steps</div>
+          </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Step 4: WAV -->
+        <div class="step">
+          <div class="step-num infra">Step 4</div>
+          <h4>WAV Render + Upload</h4>
+          <div class="detail">
+            <code>renderToWav(events)</code> — Sine waves only at 44.1kHz 16-bit PCM. Simple attack/release envelope (no ADSR). No harmonics, no timbre. Amplitude from velocity.<br><br>
+            This is a <strong>pitch-accurate reference</strong>, not the final output. Uploaded to Cloudflare R2 as reference for Suno.
+          </div>
+          <div class="loss-markers">
+            <div class="loss-tag partial">Pitch accurate, but timbre is meaningless sine waves</div>
+          </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Step 5: Suno Upload-Cover -->
+        <div class="step">
+          <div class="step-num api">Step 5</div>
+          <h4>Cover Prompt + Suno Upload-Cover API</h4>
+          <div class="detail">
+            Builds prompt describing the raga, selected instruments, arrangement instructions, and ornament guidance.<br><br>
+            <strong>Two prompt sub-paths:</strong><br>
+            · <strong>Template</strong> <code>buildCoverPrompt()</code> — detailed but verbose (~1500 chars)<br>
+            · <strong>AI</strong> <code>generateSunoPrompt()</code> via OpenAI — creative but may hallucinate raga details, truncated to 500 chars<br><br>
+            <code>POST /api/v1/generate/upload-cover</code><br>
+            Sends R2 WAV URL + prompt + style + negative tags. <code>audioWeight: 0.6</code> balances reference audio vs prompt.
+          </div>
+          <div class="loss-markers">
+            <div class="loss-tag lost">Pakad — not in cover prompt</div>
+            <div class="loss-tag lost">Aaroha/Avaroha — not in cover prompt</div>
+            <div class="loss-tag partial">Ornaments — described in text, Suno interprets freely</div>
+            <div class="loss-tag partial">audioWeight 0.6 — Suno may reshape melody</div>
+          </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Step 6 -->
+        <div class="step">
+          <div class="step-num infra">Step 6</div>
+          <h4>Poll → Download → R2 Upload</h4>
+          <div class="detail">
+            Same polling mechanism as Legacy path.<br>
+            Polls every 5s, max 30 attempts (2.5 min timeout).<br>
+            Downloads final MP3, uploads to R2, updates metadata JSON.
+          </div>
+          <div class="failure-box">
+            <h5>⚠ Same Failure Risk</h5>
+            <div class="detail">
+              No retry on network errors. No exponential backoff. No circuit breaker.<br>
+              A single <code>fetch failed</code> kills the entire pipeline after all previous steps succeeded.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Theory Preservation Matrix -->
+  <div class="matrix-section">
+    <div class="section-label">Theory Preservation Matrix — What Survives Each Path</div>
+    <div class="matrix-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Theory Element</th>
+            <th>Legacy Path</th>
+            <th>Authentic (Algorithmic)</th>
+            <th>Authentic (AI)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pakad (signature phrase)</td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Never sent to Suno. The raga's identity fingerprint is completely absent.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Not generated. AlapGenerator uses random note selection only.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator yellow"></div>
+                <span>Included in AI prompt ("play pakad 2-3 times in Jor"). Not validated in output.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Aaroha / Avaroha</td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator yellow"></div>
+                <span>Mentioned as western note names in prompt text. Suno has no enforcement.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator yellow"></div>
+                <span>Soft enforced — if no valid ascending note, falls back to any scale note.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator yellow"></div>
+                <span>Checked post-generation. Logs warnings (e.g., "D→S doesn't follow avaroha") but doesn't reject or fix.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Ornaments (meend/gamak/kan)</td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator yellow"></div>
+                <span>Listed in style: "Meend (glides), Gamak (oscillations)". Suno interprets freely.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Not generated. Plain notes only — no glides, no oscillation, no grace notes.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator yellow"></div>
+                <span>Generated as micro-steps: meend = 6 discrete pitch steps (not smooth glide), gamak = alternating notes. MIDI has no pitch bend support.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Prahar (time of day)</td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator yellow"></div>
+                <span>Influences style descriptors ("Dawn atmosphere") and suggested tempo ("Slow tempo, Alap style").</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Completely ignored. Melody timing, phase durations, and tempo are identical regardless of prahar.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Ignored in melody generation. Should affect note durations and phase proportions.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Vadi / Samvadi</td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator yellow"></div>
+                <span>"Emphasize [note] as primary" in prompt. Depends on Suno interpretation.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator green"></div>
+                <span>Weighted 3x/2x in random selection. Vadi gets longer durations (2-4s vs 0.5-2s).</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator green"></div>
+                <span>Weighted 3x/2x. Velocity boost on vadi/samvadi notes. Explicit in AI prompt.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Scale / Notes</td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator green"></div>
+                <span>Fully converted to western notes. Avoid notes listed in negativeTags.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator green"></div>
+                <span>Only scale notes used. Proper swara→MIDI conversion.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator green"></div>
+                <span>Scale provided to AI. Conversion validated. Out-of-scale notes filtered.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Difficulty</td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Ignored. "Advanced" Darbari Kanada treated identically to "Beginner" Bilawal.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Ignored. No complexity scaling in note selection or phrase length.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Ignored. Not sent to OpenAI prompt. Could influence ornament density, phrase complexity.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Special Rules</td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Not included in prompt. "Andolan on komal Ga" is never communicated.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator red"></div>
+                <span>Not implemented. No andolan, no specific phrase rules.</span>
+              </div>
+            </td>
+            <td>
+              <div class="matrix-cell">
+                <div class="indicator yellow"></div>
+                <span>Included in AI prompt as text instruction. Not validated in output.</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Log failure detail -->
+  <div class="matrix-section">
+    <div class="section-label">Observed Failure — Log from 2026-04-11 04:56:53</div>
+    <div class="schema-card" style="border-color: rgba(240,82,82,0.25);">
+      <div class="schema-header" style="border-color: rgba(240,82,82,0.15);">
+        <h3 style="color:var(--red);">Status Polling Network Failure</h3>
+        <span style="color:var(--red)">Task 8b9682e6...7294</span>
+      </div>
+      <div style="padding: 20px 24px; font-size: 12px; line-height: 2;">
+        <div style="color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:11px;">
+          <span style="color:var(--green)">04:55:33</span> <span style="color:var(--text-dim)">Task submitted — upload-cover to Suno</span><br>
+          <span style="color:var(--green)">04:55:38</span> <span style="color:var(--yellow)">Poll #1 → PENDING</span><br>
+          <span style="color:var(--text-muted)">04:55:43 — 04:56:09</span> <span style="color:var(--yellow)">Polls #2–#7 → PENDING</span><br>
+          <span style="color:var(--green)">04:56:15</span> <span style="color:var(--cyan)">Poll #8 → TEXT_SUCCESS</span> <span style="color:var(--text-muted)">(Suno generated text/metadata)</span><br>
+          <span style="color:var(--green)">04:56:33</span> <span style="color:var(--cyan)">Poll #10 → FIRST_SUCCESS</span> <span style="color:var(--text-muted)">(first audio track ready)</span><br>
+          <span style="color:var(--red); font-weight: 700;">04:56:53</span> <span style="color:var(--red); font-weight: 700;">Poll #12 → "fetch failed" — HTTP 500 returned to client</span><br>
+        </div>
+        <div style="margin-top: 16px; padding: 14px 18px; background: var(--red-dim); border-radius: 6px; border: 1px solid rgba(240,82,82,0.2); color: #d09090; font-size: 11px; line-height: 1.7;">
+          <strong style="color:var(--red)">Root Cause:</strong> Network timeout on <code style="color:var(--red)">GET /api/v1/generate/record-info</code> after 10.5s. The Suno API connection dropped during the poll.<br><br>
+          <strong style="color:var(--red)">Impact:</strong> Track was likely fully generated on Suno's side (reached FIRST_SUCCESS) but the client received a 500 error. The track was never downloaded or saved to the library.<br><br>
+          <strong style="color:var(--red)">Missing Safeguards:</strong><br>
+          · No retry on transient network failures<br>
+          · No exponential backoff between polls<br>
+          · No circuit breaker pattern<br>
+          · No recovery mechanism to resume failed downloads<br>
+          · <code style="color:var(--red)">callBackUrl: "https://example.com/callback"</code> is a placeholder — real callbacks would avoid polling entirely
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

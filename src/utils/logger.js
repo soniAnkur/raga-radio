@@ -1,14 +1,10 @@
 /**
  * Logger Utility
  * Provides colored console output and file logging for debugging
+ *
+ * File logging is only used locally (never on Vercel).
+ * fs/path are required lazily to prevent Turbopack NFT from tracing the entire project tree.
  */
-
-import { appendFileSync, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Log levels
 const LEVELS = {
@@ -56,13 +52,37 @@ const isVercel = process.env.VERCEL === '1';
 const config = {
   level: LEVELS[process.env.LOG_LEVEL?.toUpperCase()] ?? LEVELS.DEBUG,
   logToFile: !isVercel && process.env.LOG_TO_FILE !== 'false',
-  logDir: join(__dirname, '..', '..', 'logs'),
 };
 
-// Ensure log directory exists (skip on Vercel)
-if (config.logToFile && !isVercel) {
-  if (!existsSync(config.logDir)) {
-    mkdirSync(config.logDir, { recursive: true });
+// Lazy file-logging state (initialized on first write, avoids NFT tracing)
+let _logDir = null;
+
+function getLogDir() {
+  if (_logDir) return _logDir;
+  if (isVercel) return null;
+  try {
+    const path = require(/* turbopackIgnore */ 'path');
+    const fs = require(/* turbopackIgnore */ 'fs');
+    _logDir = path.join(process.cwd(), 'logs');
+    if (!fs.existsSync(_logDir)) {
+      fs.mkdirSync(_logDir, { recursive: true });
+    }
+    return _logDir;
+  } catch {
+    config.logToFile = false;
+    return null;
+  }
+}
+
+function writeToFile(text) {
+  const dir = getLogDir();
+  if (!dir) return;
+  try {
+    const fs = require(/* turbopackIgnore */ 'fs');
+    const date = new Date().toISOString().split('T')[0];
+    fs.appendFileSync(`${dir}/raga-radio-${date}.log`, text);
+  } catch (err) {
+    console.error('Failed to write to log file:', err.message);
   }
 }
 
@@ -72,14 +92,6 @@ if (config.logToFile && !isVercel) {
 function getTimestamp() {
   const now = new Date();
   return now.toISOString().replace('T', ' ').substring(0, 23);
-}
-
-/**
- * Get today's log file path
- */
-function getLogFilePath() {
-  const date = new Date().toISOString().split('T')[0];
-  return join(config.logDir, `raga-radio-${date}.log`);
 }
 
 /**
@@ -130,13 +142,9 @@ function log(level, category, message, data) {
     console.log(formatted.console);
   }
 
-  // File output
+  // File output (local only)
   if (config.logToFile) {
-    try {
-      appendFileSync(getLogFilePath(), formatted.file);
-    } catch (err) {
-      console.error('Failed to write to log file:', err.message);
-    }
+    writeToFile(formatted.file);
   }
 }
 

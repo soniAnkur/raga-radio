@@ -110,7 +110,7 @@ export async function pollStatus(taskId, options = {}) {
       log.debug(`Poll attempt ${attempt}/${maxAttempts}`, { status });
 
       // kie.ai uses SUCCESS, FIRST_SUCCESS, TEXT_SUCCESS, PENDING
-      if (status === 'complete' || status === 'SUCCESS') {
+      if (status.toUpperCase().includes('SUCCESS')) {
         log.info(`Generation complete`, { taskId, status });
         return record;
       }
@@ -194,13 +194,8 @@ export async function downloadTracks(record, ragaName, options = {}) {
 
   for (let i = 0; i < tracks.length; i++) {
     const track = tracks[i];
-    // kie.ai: prefer audioUrl, fallback to streamAudioUrl (add .mp3 if needed)
-    let audioUrl = track.audioUrl || track.audio_url || track.streamAudioUrl;
-
-    // Ensure URL ends with .mp3 for proper download
-    if (audioUrl && !audioUrl.includes('.mp3') && !audioUrl.includes('?')) {
-      audioUrl = audioUrl + '.mp3';
-    }
+    // kie.ai: prefer audioUrl/sourceAudioUrl (direct .mp3), fallback to streamAudioUrl
+    let audioUrl = track.audioUrl || track.sourceAudioUrl || track.audio_url || track.streamAudioUrl;
 
     if (!audioUrl) {
       log.warn(`Track ${i + 1}: No audio URL found`);

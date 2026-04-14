@@ -35,8 +35,23 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Next.js build output
+.next/
+
 # Vercel
 .vercel
+
+# Capacitor native projects — generated artefacts
+# ios/ and android/ directories are committed, but not their build output.
+ios/App/Pods/
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/DerivedData/
+ios/.DS_Store
+android/.gradle/
+android/app/build/
+android/build/
+android/.DS_Store
+.capacitor/
 
 # Credentials and secrets (never commit these)
 *.pem

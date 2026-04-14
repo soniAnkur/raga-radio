@@ -1,0 +1,2500 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: tests/generate-local.spec.ts >> Generate Bhairav track locally and wait for completion
+- Location: tests/generate-local.spec.ts:5:1
+
+# Error details
+
+```
+Error: expect(received).toBeGreaterThan(expected)
+
+Expected: > 0
+Received:   0
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - generic:
+              - generic: Good Night
+              - heading "Night Ragas" [level=1]
+              - paragraph: 10 PM – 4 AM · Moonlit compositions
+          - generic:
+            - generic:
+              - heading "For This Hour" [level=2]
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Khamaj
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Des
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Jhinjhoti
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Rageshree
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Kafi
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Pilu
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Tilang
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Jaijaiwanti
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bihag
+                  - generic:
+                    - generic: Romantic
+          - generic:
+            - generic:
+              - heading "Devotional" [level=2]
+              - text: Spiritual & Sacred
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bhairav
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Ahir Bhairav
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Lalit
+                  - generic:
+                    - generic: Mysterious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Ramkali
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Jogiya
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Vibhas
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bhatiyar
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Kalingda
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Nat Bhairav
+                  - generic:
+                    - generic: Majestic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bilawal
+                  - generic:
+                    - generic: Joyful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Deshkar
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Asavari
+                  - generic:
+                    - generic: Pathos
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Todi
+                  - generic:
+                    - generic: Pathos
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Darbari Kanada
+                  - generic:
+                    - generic: Majestic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Gujari Todi
+                  - generic:
+                    - generic: Pathos
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Brindavani Sarang
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Dhanashree
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Poorvi
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Shree
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Gauri
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Paraj
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Yaman
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bhoopali
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Kedar
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Shankara
+                  - generic:
+                    - generic: Heroic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Durga
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Shuddha Kalyan
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bhairavi
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Ramdasi Malhar
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bilaskhani Todi
+                  - generic:
+                    - generic: Pathos
+          - generic:
+            - generic:
+              - heading "Romantic" [level=2]
+              - text: Love & Longing
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Ahir Bhairav
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bhimpalasi
+                  - generic:
+                    - generic: Pathos
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Patdeep
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Madhuvanti
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Brindavani Sarang
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Dhanashree
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Puriya Dhanashree
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Sohini
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Yaman
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Kamod
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Tilak Kamod
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Chhayanat
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Khamaj
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Des
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Jhinjhoti
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Rageshree
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Kafi
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Pilu
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Tilang
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Jaijaiwanti
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bihag
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bageshree
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Chandrakauns
+                  - generic:
+                    - generic: Mysterious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Nand
+                  - generic:
+                    - generic: Joyful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Maru Bihag
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Miyan ki Malhar
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Megh Malhar
+                  - generic:
+                    - generic: Rainy
+          - generic:
+            - generic:
+              - heading "Peaceful" [level=2]
+              - text: Calm & Meditative
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Ahir Bhairav
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Vibhas
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bilawal
+                  - generic:
+                    - generic: Joyful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Alhaiya Bilawal
+                  - generic:
+                    - generic: Joyful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Deshkar
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Patdeep
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Madhuvanti
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Sohini
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Yaman
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bhoopali
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Hamsadhwani
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Kedar
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Durga
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Chhayanat
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Shuddha Kalyan
+                  - generic:
+                    - generic: Peaceful
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Rageshree
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bihag
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bageshree
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Maru Bihag
+                  - generic:
+                    - generic: Romantic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bhairavi
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Megh Malhar
+                  - generic:
+                    - generic: Rainy
+          - generic:
+            - generic:
+              - heading "Serious" [level=2]
+              - text: Deep & Contemplative
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bhairav
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Lalit
+                  - generic:
+                    - generic: Mysterious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Ramkali
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Jogiya
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Bhatiyar
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Kalingda
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Asavari
+                  - generic:
+                    - generic: Pathos
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Todi
+                  - generic:
+                    - generic: Pathos
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Darbari Kanada
+                  - generic:
+                    - generic: Majestic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Jaunpuri
+                  - generic:
+                    - generic: Pathos
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Adana
+                  - generic:
+                    - generic: Heroic
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Multani
+                  - generic:
+                    - generic: Pathos
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Marwa
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Puriya
+                  - generic:
+                    - generic: Pathos
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Poorvi
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Shree
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Puriya Dhanashree
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Gauri
+                  - generic:
+                    - generic: Devotional
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Paraj
+                  - generic:
+                    - generic: Serious
+              - generic:
+                - generic:
+                  - img
+                  - img
+                - generic:
+                  - generic: Malkauns
+                  - generic:
+                    - generic: Mysterious
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - heading "Explore" [level=1] [ref=e7]
+          - paragraph [ref=e8]: All 68+ ragas
+        - generic [ref=e10]:
+          - img [ref=e11]
+          - textbox "Search ragas..." [ref=e13]: Bhairav
+          - button [ref=e14] [cursor=pointer]:
+            - img [ref=e15]
+        - generic [ref=e17]:
+          - button "All" [ref=e18] [cursor=pointer]
+          - button "Morning" [ref=e19] [cursor=pointer]
+          - button "Afternoon" [ref=e20] [cursor=pointer]
+          - button "Evening" [ref=e21] [cursor=pointer]
+          - button "Night" [ref=e22] [cursor=pointer]
+          - button "Devotional" [ref=e24] [cursor=pointer]
+          - button "Romantic" [ref=e25] [cursor=pointer]
+          - button "Peaceful" [ref=e26] [cursor=pointer]
+          - button "Serious" [ref=e27] [cursor=pointer]
+        - generic [ref=e28]:
+          - generic [ref=e29] [cursor=pointer]:
+            - generic [ref=e30]:
+              - img
+              - img [ref=e32]
+            - generic [ref=e34]:
+              - generic [ref=e35]: Bhairav
+              - generic [ref=e37]: Devotional
+          - generic [ref=e39] [cursor=pointer]:
+            - generic [ref=e40]:
+              - img
+              - img [ref=e42]
+            - generic [ref=e44]:
+              - generic [ref=e45]: Ahir Bhairav
+              - generic [ref=e47]: Devotional
+          - generic [ref=e49] [cursor=pointer]:
+            - generic [ref=e50]:
+              - img
+              - img [ref=e52]
+            - generic [ref=e54]:
+              - generic [ref=e55]: Ramkali
+              - generic [ref=e57]: Devotional
+          - generic [ref=e59] [cursor=pointer]:
+            - generic [ref=e60]:
+              - img
+              - img [ref=e62]
+            - generic [ref=e64]:
+              - generic [ref=e65]: Jogiya
+              - generic [ref=e67]: Devotional
+          - generic [ref=e69] [cursor=pointer]:
+            - generic [ref=e70]:
+              - img
+              - img [ref=e72]
+            - generic [ref=e74]:
+              - generic [ref=e75]: Vibhas
+              - generic [ref=e77]: Peaceful
+          - generic [ref=e79] [cursor=pointer]:
+            - generic [ref=e80]:
+              - img
+              - img [ref=e82]
+            - generic [ref=e84]:
+              - generic [ref=e85]: Kalingda
+              - generic [ref=e87]: Devotional
+          - generic [ref=e89] [cursor=pointer]:
+            - generic [ref=e90]:
+              - img
+              - img [ref=e92]
+            - generic [ref=e94]:
+              - generic [ref=e95]: Nat Bhairav
+              - generic [ref=e97]: Majestic
+          - generic [ref=e99] [cursor=pointer]:
+            - generic [ref=e100]:
+              - img
+              - img [ref=e102]
+            - generic [ref=e104]:
+              - generic [ref=e105]: Malkauns
+              - generic [ref=e107]: Mysterious
+          - generic [ref=e109] [cursor=pointer]:
+            - generic [ref=e110]:
+              - img
+              - img [ref=e112]
+            - generic [ref=e114]:
+              - generic [ref=e115]: Chandrakauns
+              - generic [ref=e117]: Mysterious
+          - generic [ref=e119] [cursor=pointer]:
+            - generic [ref=e120]:
+              - img
+              - img [ref=e122]
+            - generic [ref=e124]:
+              - generic [ref=e125]: Bhairavi
+              - generic [ref=e127]: Devotional
+          - generic [ref=e129] [cursor=pointer]:
+            - generic [ref=e130]:
+              - img
+              - img [ref=e132]
+            - generic [ref=e134]:
+              - generic [ref=e135]: Bilaskhani Todi
+              - generic [ref=e137]: Pathos
+      - generic:
+        - generic:
+          - generic:
+            - heading "Library" [level=1]
+            - generic:
+              - generic:
+                - generic: "118"
+                - generic: tracks
+              - generic:
+                - generic: 0:00
+                - generic: total
+          - generic:
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kalingda
+                - generic: Jazz Fusion
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kalingda
+                - generic: Jazz Fusion
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kalingda
+                - generic: Jazz Fusion
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kalingda
+                - generic: Jazz Fusion
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kafi
+                - generic: Orchestral / Cinematic
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kafi
+                - generic: Orchestral / Cinematic
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kafi
+                - generic: Orchestral / Cinematic
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kafi
+                - generic: Orchestral / Cinematic
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Darbari Kanada
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Darbari Kanada
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Darbari Kanada
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Darbari Kanada
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Shankara
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Shankara
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Shankara
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Shankara
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Malkauns
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Malkauns
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Malkauns
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Malkauns
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Tilang
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Tilang
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Tilang
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Tilang
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Asavari
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Asavari
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Asavari
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Asavari
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Des
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Des
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Des
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Des
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jogiya
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jogiya
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jogiya
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jogiya
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kafi
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kafi
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kafi
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Kafi
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jaunpuri
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jaunpuri
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jaunpuri
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jaunpuri
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Multani
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Multani
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Multani
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Multani
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Ahir Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Ahir Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Ahir Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Ahir Bhairav
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Darbari Kanada
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Darbari Kanada
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Darbari Kanada
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Darbari Kanada
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Des
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Des
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Des
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Des
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jhinjhoti
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jhinjhoti
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jhinjhoti
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Jhinjhoti
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bahar
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bahar
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bahar
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bahar
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Nand
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Nand
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Nand
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Nand
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Pilu
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Pilu
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Pilu
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Pilu
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhatiyar
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhatiyar
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhatiyar
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Bhatiyar
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Khamaj
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Chhayanat
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Chhayanat
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic: Raga Lalit
+                - generic: Indian Classical
+              - generic:
+                - button "Share":
+                  - img
+                - button "Play":
+                  - img
+    - navigation [ref=e139]:
+      - button "Home" [ref=e140] [cursor=pointer]:
+        - img [ref=e141]
+        - generic [ref=e143]: Home
+      - button "Explore" [ref=e144] [cursor=pointer]:
+        - img [ref=e145]
+        - generic [ref=e147]: Explore
+      - button "Library" [ref=e148] [cursor=pointer]:
+        - img [ref=e149]
+        - generic [ref=e151]: Library
+    - generic [ref=e153]:
+      - generic [ref=e154]:
+        - button [ref=e155] [cursor=pointer]:
+          - img [ref=e156]
+        - generic [ref=e158]: Now Playing
+        - button [ref=e159] [cursor=pointer]:
+          - img [ref=e160]
+      - img [ref=e166]
+      - generic [ref=e168]:
+        - heading "—" [level=2] [ref=e169]
+        - paragraph [ref=e170]: —
+      - generic [ref=e176]:
+        - generic [ref=e177]: 0:00
+        - generic [ref=e178]: 0:00
+      - generic [ref=e179]:
+        - button [ref=e180] [cursor=pointer]:
+          - img [ref=e181]
+        - button [ref=e183] [cursor=pointer]:
+          - img [ref=e184]
+        - button [ref=e186] [cursor=pointer]:
+          - img [ref=e187]
+    - generic [ref=e190]:
+      - button [ref=e193] [cursor=pointer]:
+        - img [ref=e194]
+      - generic [ref=e196]:
+        - generic [ref=e197]:
+          - img [ref=e201]
+          - generic [ref=e203]:
+            - heading "Raga Bhairav" [level=2] [ref=e204]
+            - paragraph [ref=e205]: Bhairav Thaat
+        - generic [ref=e206]:
+          - button "Details" [ref=e207] [cursor=pointer]
+          - button "Generate" [ref=e208] [cursor=pointer]
+        - generic [ref=e210]:
+          - generic [ref=e211]:
+            - generic [ref=e212]: Mode
+            - generic [ref=e213]:
+              - button "Standard" [ref=e214] [cursor=pointer]
+              - button "Authentic" [ref=e215] [cursor=pointer]
+          - generic [ref=e217]:
+            - generic [ref=e218]: Genre
+            - generic [ref=e219]:
+              - button "Classical" [ref=e220] [cursor=pointer]
+              - button "Ambient" [ref=e221] [cursor=pointer]
+              - button "Metal" [ref=e222] [cursor=pointer]
+              - button "EDM" [ref=e223] [cursor=pointer]
+              - button "Lo-fi" [ref=e224] [cursor=pointer]
+              - button "Jazz" [ref=e225] [cursor=pointer]
+              - button "World" [ref=e226] [cursor=pointer]
+              - button "Orchestral" [ref=e227] [cursor=pointer]
+          - generic [ref=e228]:
+            - generic [ref=e229]: Instruments
+            - generic [ref=e230]:
+              - generic [ref=e231]:
+                - generic [ref=e232]: Electric
+                - generic [ref=e233]:
+                  - button "Electric Guitar" [ref=e234] [cursor=pointer]
+                  - button "Bass Guitar" [ref=e235] [cursor=pointer]
+              - generic [ref=e236]:
+                - generic [ref=e237]: Percussion
+                - generic [ref=e238]:
+                  - button "Drums" [ref=e239] [cursor=pointer]
+                  - button "Double Bass Drums" [ref=e240] [cursor=pointer]
+              - generic [ref=e241]:
+                - generic [ref=e242]: Electronic
+                - button "Synth Lead" [ref=e244] [cursor=pointer]
+              - generic [ref=e245]:
+                - generic [ref=e246]: Orchestral
+                - button "Orchestral Hits" [ref=e248] [cursor=pointer]
+            - paragraph [ref=e249]: Tap to select instruments
+          - generic [ref=e250]:
+            - generic [ref=e251]: Duration
+            - generic [ref=e252]:
+              - button "30s" [ref=e253] [cursor=pointer]
+              - button "1 min" [ref=e254] [cursor=pointer]
+              - button "1.5 min" [ref=e255] [cursor=pointer]
+              - button "2 min" [ref=e256] [cursor=pointer]
+          - generic [ref=e258] [cursor=pointer]:
+            - generic [ref=e259]:
+              - generic [ref=e260]: Deep Background Music
+              - generic [ref=e261]: Atmospheric accompaniment matching the raga's mood
+            - checkbox "Deep Background Music Atmospheric accompaniment matching the raga's mood" [checked]
+      - button "Generate Track" [ref=e264] [cursor=pointer]:
+        - generic [ref=e265]: Generate Track
+        - img [ref=e266]
+    - generic [ref=e268]:
+      - img [ref=e269]
+      - generic [ref=e271]: Unexpected end of JSON input
+  - alert [ref=e272]
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | 
+  3  | const BASE = 'http://localhost:3000';
+  4  | 
+  5  | test('Generate Bhairav track locally and wait for completion', async ({ page }) => {
+  6  |   test.setTimeout(600_000); // 10 minutes
+  7  | 
+  8  |   await page.goto(BASE);
+  9  |   await page.waitForSelector('#current-time-ragas .raga-card, #current-time-ragas .card', { timeout: 15000 });
+  10 |   console.log('Home loaded');
+  11 | 
+  12 |   // Explore > Bhairav
+  13 |   await page.click('[data-tab="explore"]');
+  14 |   await page.waitForSelector('#explore-grid .raga-card, #explore-grid .card, #explore-grid .explore-card', { timeout: 10000 });
+  15 |   await page.fill('#search-input', 'Bhairav');
+  16 |   await page.waitForTimeout(500);
+  17 |   await page.locator('#explore-grid .raga-card, #explore-grid .card, #explore-grid .explore-card').first().click();
+  18 |   await page.waitForTimeout(1000);
+  19 | 
+  20 |   const sheetTitle = await page.locator('#sheet-title').textContent();
+  21 |   console.log(`Sheet: ${sheetTitle}`);
+  22 | 
+  23 |   // Generate tab > 30s > click Generate
+  24 |   await page.click('.sheet-tab[data-tab="generate"]');
+  25 |   await page.waitForTimeout(300);
+  26 |   await page.locator('.duration-chip[data-value="30"]').click();
+  27 |   console.log('Config: Authentic, Indian Classical, 30s');
+  28 | 
+  29 |   await page.locator('#generate-btn').click();
+  30 |   console.log(`[${ts()}] Generation started`);
+  31 | 
+  32 |   await page.waitForSelector('#gen-progress.active', { timeout: 10000 });
+  33 | 
+  34 |   let lastPhase = '';
+  35 |   for (let i = 0; i < 120; i++) {
+  36 |     await page.waitForTimeout(5000);
+  37 | 
+  38 |     const phase = await page.locator('#gen-phase').textContent().catch(() => '');
+  39 |     const step = await page.locator('#gen-step').textContent().catch(() => '');
+  40 |     if (phase !== lastPhase) {
+  41 |       console.log(`[${ts()}] ${step} — ${phase}`);
+  42 |       lastPhase = phase || '';
+  43 |     }
+  44 | 
+  45 |     // Check completion
+  46 |     const progressHidden = await page.locator('#gen-progress').evaluate(el => el.classList.contains('hidden')).catch(() => false);
+  47 |     if (progressHidden) {
+  48 |       console.log(`[${ts()}] COMPLETE — Track generated successfully!`);
+  49 |       const playBtn = page.locator('#sheet-play-btn:not(.hidden)');
+  50 |       const miniPlayer = page.locator('#mini-player:not(.hidden)');
+> 51 |       expect((await playBtn.count()) + (await miniPlayer.count())).toBeGreaterThan(0);
+     |                                                                    ^ Error: expect(received).toBeGreaterThan(expected)
+  52 |       return;
+  53 |     }
+  54 | 
+  55 |     // Check for error/timeout toast
+  56 |     const toastVisible = await page.locator('#toast:not(.hidden)').count();
+  57 |     if (toastVisible > 0) {
+  58 |       const msg = await page.locator('#toast-message').textContent();
+  59 |       console.log(`[${ts()}] Toast: ${msg}`);
+  60 |       if (msg?.toLowerCase().includes('fail') || msg?.toLowerCase().includes('error') || msg?.toLowerCase().includes('timed out')) {
+  61 |         throw new Error(`Generation failed: ${msg}`);
+  62 |       }
+  63 |     }
+  64 |   }
+  65 | 
+  66 |   throw new Error('Generation timed out after 10 minutes');
+  67 | });
+  68 | 
+  69 | function ts() {
+  70 |   return new Date().toLocaleTimeString();
+  71 | }
+  72 | 
+```

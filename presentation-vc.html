@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raga Radio - Investor Deck</title>
+<link rel="stylesheet" href="../_tools/design-system.css">
+<style>
+:root {
+  --ds-accent: #c17f24;
+  --ds-accent-light: #d4993a;
+  --ds-accent-bg: rgba(193,127,36,0.08);
+}
+::selection { background: var(--ds-accent); color: #fff; }
+
+/* Slide system */
+.slide { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: clamp(48px, 8vw, 80px) var(--ds-gutter); position: relative; }
+.slide-inner { max-width: 900px; width: 100%; margin: 0 auto; }
+.slide + .slide { border-top: 1px solid rgba(0,0,0,.06); }
+
+.gold { color: var(--ds-accent); }
+.lead { font-size: 15px; color: var(--ds-text-secondary); max-width: 560px; line-height: 1.7; }
+
+/* Hero */
+.slide-hero { text-align: center; }
+.tagline { font-size: 17px; color: var(--ds-text-secondary); font-style: italic; margin: 1.25rem 0; }
+
+/* Metrics */
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin: 2rem 0; }
+.metric { text-align: center; padding: 1.25rem; }
+.metric .val { font-size: clamp(24px, 3vw, 32px); font-weight: 700; color: var(--ds-text); line-height: 1; }
+.metric .label { font-size: 11px; color: var(--ds-text-secondary); text-transform: uppercase; letter-spacing: .1em; margin-top: .3rem; }
+
+/* Point list */
+.point-list { list-style: none; padding: 0; margin: 1rem 0; }
+.point-list li { padding: .5rem 0; padding-left: 1.25rem; position: relative; font-size: 14px; border-bottom: 1px solid rgba(0,0,0,.04); }
+.point-list li:last-child { border-bottom: 0; }
+.point-list li::before { content: ''; position: absolute; left: 0; top: .85rem; width: 5px; height: 5px; border-radius: 50%; background: var(--ds-accent); }
+
+/* Two-col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; }
+@media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+/* Moat grid */
+.moat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 2rem 0; }
+.moat-item h4 { font-size: 14px; font-weight: 600; margin-bottom: .3rem; }
+.moat-item p { font-size: 13px; color: var(--ds-text-secondary); line-height: 1.5; }
+
+/* Revenue table */
+.rev-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 14px; }
+.rev-table th { text-align: left; padding: .6rem .75rem; border-bottom: 2px solid rgba(0,0,0,.08); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ds-text-secondary); }
+.rev-table td { padding: .55rem .75rem; border-bottom: 1px solid rgba(0,0,0,.04); }
+.rev-table .highlight { color: var(--ds-accent); font-weight: 600; }
+
+/* Timeline */
+.timeline { position: relative; margin: 1.5rem 0; padding-left: 1.5rem; }
+.timeline::before { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,.1); }
+.timeline-item { position: relative; margin-bottom: 1.25rem; padding-left: 1.25rem; }
+.timeline-item::before { content: ''; position: absolute; left: -1.5rem; top: .5rem; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--ds-accent); background: var(--ds-bg); }
+.timeline-item.current::before { background: var(--ds-accent); }
+.timeline-item h4 { font-size: 14px; font-weight: 600; margin-bottom: .1rem; }
+.timeline-item p { font-size: 13px; color: var(--ds-text-secondary); }
+
+/* Ask */
+.ask-box { border-radius: var(--ds-radius-lg); padding: 2.5rem; text-align: center; margin: 2rem 0; }
+.ask-amount { font-size: clamp(36px, 5vw, 48px); font-weight: 700; color: var(--ds-text); margin: .5rem 0; }
+.ask-use { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-top: 1.5rem; text-align: left; }
+.ask-item .pct { font-size: 20px; font-weight: 700; color: var(--ds-accent); margin-bottom: .15rem; }
+.ask-item .desc { color: var(--ds-text-secondary); font-size: 12px; line-height: 1.4; }
+
+/* Mermaid */
+.mermaid-wrap { margin: 2rem 0; border-radius: var(--ds-radius); padding: 2rem; overflow-x: auto; }
+.mermaid-wrap .caption { font-size: 11px; color: var(--ds-text-secondary); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1rem; font-weight: 600; }
+
+/* Chart */
+.chart-wrap { margin: 2rem 0; border-radius: var(--ds-radius); padding: 2rem; }
+.chart-wrap .label { font-size: 11px; color: var(--ds-text-secondary); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1rem; font-weight: 600; }
+
+/* Nav dots */
+.nav-dots { position: fixed; right: 1.25rem; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+.nav-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ds-text-tertiary); cursor: pointer; transition: background .3s, transform .3s; border: none; }
+.nav-dot:hover, .nav-dot.active { background: var(--ds-accent); transform: scale(1.4); }
+@media (max-width: 768px) { .nav-dots { display: none; } }
+
+/* Footer */
+.slide-footer { min-height: auto; padding: 3rem 2rem; text-align: center; border-top: 1px solid rgba(0,0,0,.06); }
+.slide-footer a { color: var(--ds-accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- Navigation dots -->
+<div class="nav-dots">
+  <div class="nav-dot active" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})"></div>
+  <div class="nav-dot" onclick="document.getElementById('s2').scrollIntoView({behavior:'smooth'})"></div>
+  <div class="nav-dot" onclick="document.getElementById('s3').scrollIntoView({behavior:'smooth'})"></div>
+  <div class="nav-dot" onclick="document.getElementById('s4').scrollIntoView({behavior:'smooth'})"></div>
+  <div class="nav-dot" onclick="document.getElementById('s5').scrollIntoView({behavior:'smooth'})"></div>
+  <div class="nav-dot" onclick="document.getElementById('s6').scrollIntoView({behavior:'smooth'})"></div>
+  <div class="nav-dot" onclick="document.getElementById('s7').scrollIntoView({behavior:'smooth'})"></div>
+  <div class="nav-dot" onclick="document.getElementById('s8').scrollIntoView({behavior:'smooth'})"></div>
+  <div class="nav-dot" onclick="document.getElementById('s9').scrollIntoView({behavior:'smooth'})"></div>
+</div>
+
+<!-- SLIDE 1: Title -->
+<div class="slide slide-hero" id="s1">
+  <div class="ds-hero-image">
+    <img src="assets/hero-vc.png" alt="Raga Radio" onerror="this.parentElement.style.display='none'">
+  </div>
+  <div class="slide-inner" style="position:relative;z-index:1">
+    <div class="ds-overline ds-reveal">Investment Opportunity</div>
+    <h1 class="ds-hero-title ds-reveal">Raga Radio</h1>
+    <div class="tagline ds-reveal">AI-Powered Indian Classical Music -- Where Ancient Wisdom Meets Modern Sound</div>
+    <p class="lead ds-reveal" style="margin:1.25rem auto 0;text-align:center">The first AI platform to digitally preserve and modernize Indian classical ragas, creating an entirely new category of culturally authentic, globally accessible music.</p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:1.5rem" class="ds-reveal">
+      <span class="ds-glass-pill">68+ Ragas</span>
+      <span class="ds-glass-pill">8 Genre Fusions</span>
+      <span class="ds-glass-pill">AI Melody Engine</span>
+      <span class="ds-glass-pill">Web + iOS</span>
+      <span class="ds-glass-pill">Live Product</span>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: Problem -->
+<div class="slide" id="s2">
+  <div class="slide-inner">
+    <div class="ds-overline ds-reveal">The Problem</div>
+    <h2 class="ds-section-title ds-reveal">A 2,000-Year Musical Tradition Is Fading Away</h2>
+    <div class="two-col ds-reveal" style="margin-top:1.5rem">
+      <div>
+        <p class="lead">Indian classical music represents one of humanity's most sophisticated art forms -- yet it faces an existential crisis. Knowledge is concentrated in aging masters, access is limited to cultural insiders, and younger generations are disengaging.</p>
+        <ul class="point-list" style="margin-top:1.25rem">
+          <li>Raga knowledge passed orally through guru-shishya tradition is at risk</li>
+          <li>Global audiences cannot access or appreciate ragas in familiar formats</li>
+          <li>No technology platform preserves ragas with full music theory</li>
+          <li>Classical music audience is shrinking while global demand for Indian culture grows</li>
+        </ul>
+      </div>
+      <div>
+        <div class="metrics" style="grid-template-columns:1fr 1fr">
+          <div class="ds-glass-card metric"><div class="val">300+</div><div class="label">Known Ragas</div></div>
+          <div class="ds-glass-card metric"><div class="val">&lt;50</div><div class="label">Commonly Performed</div></div>
+          <div class="ds-glass-card metric"><div class="val">70%</div><div class="label">Youth Unfamiliar</div></div>
+          <div class="ds-glass-card metric"><div class="val">0</div><div class="label">AI Preservation Tools</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Solution -->
+<div class="slide" id="s3">
+  <div class="slide-inner">
+    <div class="ds-overline ds-reveal">The Solution</div>
+    <h2 class="ds-section-title ds-reveal">AI-Powered Cultural Preservation Through Music Generation</h2>
+    <p class="lead ds-reveal" style="margin-bottom:2rem">Raga Radio encodes complete raga theory into software and uses AI to generate authentic compositions in modern genres -- making ancient music accessible to everyone.</p>
+
+    <div class="ds-grid-2 ds-reveal">
+      <div class="ds-glass-card">
+        <h3 class="gold" style="font-size:16px;margin-bottom:8px">Digital Raga Archive</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">68+ ragas encoded with aaroha (ascending), avaroha (descending), vadi (king note), samvadi (queen note), pakad (signature phrase), thaat, time, mood, and season. The most comprehensive digital raga database ever built.</p>
+      </div>
+      <div class="ds-glass-card">
+        <h3 class="gold" style="font-size:16px;margin-bottom:8px">AI Composition Engine</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">GPT-4 generates musically authentic melodies following Alap-Jor-Jhala structure with ornamentations. Each melody strictly follows raga grammar -- ascending/descending rules, note emphasis, and signature phrases.</p>
+      </div>
+      <div class="ds-glass-card">
+        <h3 class="gold" style="font-size:16px;margin-bottom:8px">Multi-Genre Fusion</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">8 genre profiles transform ragas into Classical, Atmospheric, Metal, Electronic, Lo-fi, Jazz Fusion, World Fusion, and Orchestral styles -- creating 544+ unique raga-genre combinations.</p>
+      </div>
+      <div class="ds-glass-card">
+        <h3 class="gold" style="font-size:16px;margin-bottom:8px">Full Production Pipeline</h3>
+        <p class="ds-body-sm" style="color:var(--ds-text-secondary)">AI melody to MIDI (midi-writer-js) to WAV synthesis (44.1kHz sine wave) to Cloudflare R2 upload to Suno API production. Professional-quality tracks from theory to mastered audio.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Market -->
+<div class="slide" id="s4">
+  <div class="slide-inner">
+    <div class="ds-overline ds-reveal">Market Opportunity</div>
+    <h2 class="ds-section-title ds-reveal">Massive TAM at the Intersection of Three Growth Markets</h2>
+
+    <div class="ds-glass-card mermaid-wrap ds-reveal">
+      <div class="caption">Market Opportunity Funnel</div>
+      <pre class="mermaid">
+graph TD
+  A["Global Streaming Market<br>$46.7B (2024)"] --> B["Indian Music Segment<br>#2 Worldwide"]
+  B --> C["AI Music Niche<br>$2.9B (2025)"]
+  C --> D["Raga Radio<br>Cultural AI Music"]
+      </pre>
+    </div>
+
+    <div class="metrics ds-reveal">
+      <div class="ds-glass-card metric"><div class="val">$46.7B</div><div class="label">Music Streaming TAM<sup style="color:var(--ds-accent)">1</sup></div></div>
+      <div class="ds-glass-card metric"><div class="val">$2.9B</div><div class="label">AI Music (2025)<sup style="color:var(--ds-accent)">2</sup></div></div>
+      <div class="ds-glass-card metric"><div class="val">35.4M</div><div class="label">Indian Diaspora<sup style="color:var(--ds-accent)">3</sup></div></div>
+      <div class="ds-glass-card metric"><div class="val">14.9%</div><div class="label">Streaming CAGR</div></div>
+      <div class="ds-glass-card metric"><div class="val">#2</div><div class="label">India Streaming Rank</div></div>
+    </div>
+
+    <!-- Chart: Doughnut - Market Segments -->
+    <div class="ds-glass-card chart-wrap ds-reveal">
+      <div class="label">Addressable Market Segments</div>
+      <div style="max-width:360px;margin:0 auto"><canvas id="chartMarketDoughnut"></canvas></div>
+    </div>
+
+    <div class="two-col ds-reveal" style="margin-top:2rem">
+      <div>
+        <h3 class="ds-subsection-title" style="font-size:16px">Target Segments</h3>
+        <ul class="point-list">
+          <li><strong>Indian diaspora</strong> (35.4M) -- culturally connected, digitally native, high spending power</li>
+          <li><strong>Meditation & wellness</strong> -- raga-based music for yoga, meditation, sleep ($4B market)</li>
+          <li><strong>Content creators</strong> -- unique royalty-free Indian-inspired music for videos and podcasts</li>
+          <li><strong>Music education</strong> -- interactive raga learning platform for students and enthusiasts</li>
+          <li><strong>Film & media</strong> -- on-demand raga-based scores for production houses</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="ds-subsection-title" style="font-size:16px">Why Now?</h3>
+        <ul class="point-list">
+          <li>AI music generation technology has reached production quality (Suno, Udio)</li>
+          <li>Indian music streaming growing faster than any other regional market</li>
+          <li>Global interest in Indian culture at historic high (yoga, Ayurveda, cuisine)</li>
+          <li>Mobile-first India adding 100M+ new music listeners annually</li>
+          <li>No competitor has encoded raga theory into an AI generation system</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Competitive Moat -->
+<div class="slide" id="s5">
+  <div class="slide-inner">
+    <div class="ds-overline ds-reveal">Competitive Advantage</div>
+    <h2 class="ds-section-title ds-reveal">Deep Moats in Unique IP</h2>
+    <p class="lead ds-reveal" style="margin-bottom:2rem">Raga Radio's defensibility comes from proprietary musicological data, specialized AI pipelines, and first-mover advantage in an untouched niche.</p>
+
+    <div class="moat-grid ds-reveal">
+      <div class="ds-glass-card moat-item">
+        <h4>Proprietary Raga Database</h4>
+        <p>68+ ragas with complete music theory -- aaroha, avaroha, vadi, samvadi, pakad, thaat, time, mood. No other platform has this data in machine-readable format.</p>
+      </div>
+      <div class="ds-glass-card moat-item">
+        <h4>Specialized AI Pipeline</h4>
+        <p>Custom GPT-4 prompts that enforce raga grammar rules. The AI understands ascending/descending sequences, note hierarchy, and Alap-Jor-Jhala structure.</p>
+      </div>
+      <div class="ds-glass-card moat-item">
+        <h4>Swara-Western Bridge</h4>
+        <p>Proprietary converter mapping 12 Indian swaras (with komal/tivra variants) to Western notation and MIDI. Enables seamless cross-cultural music generation.</p>
+      </div>
+      <div class="ds-glass-card moat-item">
+        <h4>Multi-Genre Engine</h4>
+        <p>8 genre profiles with mood mapping, BPM ranges, instrument sets, and production styles. Any raga in any genre -- 544+ combinations no competitor offers.</p>
+      </div>
+      <div class="ds-glass-card moat-item">
+        <h4>Cross-Platform Presence</h4>
+        <p>Live web app + iOS SwiftUI wrapper ready for App Store. First-mover in AI raga music on mobile, building user habits and library lock-in.</p>
+      </div>
+      <div class="ds-glass-card moat-item">
+        <h4>Cultural Authority</h4>
+        <p>Building the definitive brand for AI-powered Indian classical music. Community and content moat deepens with every track generated.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: Revenue Model -->
+<div class="slide" id="s6">
+  <div class="slide-inner">
+    <div class="ds-overline ds-reveal">Business Model</div>
+    <h2 class="ds-section-title ds-reveal">Subscription-First Revenue</h2>
+    <p class="lead ds-reveal" style="margin-bottom:2rem">Tiered SaaS model with strong unit economics. Low marginal cost per generation, high perceived value of culturally unique content.</p>
+
+    <table class="ds-table rev-table ds-reveal">
+      <thead>
+        <tr><th>Tier</th><th>Price</th><th>Features</th><th>Target</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Free</td><td class="highlight">$0</td><td>Browse ragas, listen to community tracks, limited Quick mode</td><td>Discovery, funnel top</td></tr>
+        <tr><td>Premium</td><td class="highlight">$9.99/mo</td><td>Unlimited generation, Authentic mode, all genres, downloads, iOS</td><td>Enthusiasts, listeners</td></tr>
+        <tr><td>Creator</td><td class="highlight">$24.99/mo</td><td>MIDI downloads, commercial license, API access, priority queue</td><td>Creators, producers</td></tr>
+        <tr><td>Enterprise</td><td class="highlight">Custom</td><td>White-label, bulk generation, custom ragas, dedicated support</td><td>Studios, platforms</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Chart: Revenue Projection by Tier -->
+    <div class="ds-glass-card chart-wrap ds-reveal">
+      <div class="label">Projected Revenue by Tier ($K/month)</div>
+      <canvas id="chartRevenueTier" height="120"></canvas>
+    </div>
+
+    <div class="two-col ds-reveal" style="margin-top:2rem">
+      <div class="ds-glass-card">
+        <h3 class="ds-subsection-title" style="font-size:16px">Additional Revenue Streams</h3>
+        <ul class="point-list">
+          <li>Per-generation credits for free tier upgrades</li>
+          <li>Licensing tracks to streaming platforms (Spotify, Apple Music)</li>
+          <li>White-label raga engine for meditation and wellness apps</li>
+          <li>Educational institution partnerships for music curricula</li>
+          <li>NFT/collectible unique raga compositions</li>
+        </ul>
+      </div>
+      <div class="ds-glass-card">
+        <h3 class="ds-subsection-title" style="font-size:16px">Unit Economics</h3>
+        <ul class="point-list">
+          <li>Cost per generation: ~$0.15 (AI API + Suno + R2)</li>
+          <li>Average generations per Premium user/month: ~20</li>
+          <li>Cost to serve Premium user: ~$3.00/mo</li>
+          <li>Gross margin: ~70%</li>
+          <li>LTV/CAC target: >3x within 12 months</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: Roadmap -->
+<div class="slide" id="s7">
+  <div class="slide-inner">
+    <div class="ds-overline ds-reveal">Roadmap</div>
+    <h2 class="ds-section-title ds-reveal">Path to Scale</h2>
+
+    <div class="ds-glass-card mermaid-wrap ds-reveal">
+      <div class="caption">Product Roadmap Timeline</div>
+      <pre class="mermaid">
+gantt
+  title Product Roadmap
+  dateFormat YYYY-MM
+  axisFormat %b %Y
+  section Foundation
+    68+ Ragas, 8 Genres, Full Pipeline, Web + iOS   :done, 2026-04, 2026-06
+  section Growth
+    Subscriptions, App Store, Carnatic Ragas, User Accounts   :active, 2026-07, 2026-09
+  section Expansion
+    API Marketplace, Android, Spotify/Apple Music   : 2026-10, 2026-12
+  section Platform
+    Community, Education, Enterprise   : 2027-01, 2027-03
+  section Dominance
+    100+ Ragas, Real-time, Custom Models, International   : 2027-04, 2027-06
+      </pre>
+    </div>
+
+    <div class="two-col ds-reveal">
+      <div>
+        <div class="timeline">
+          <div class="timeline-item current">
+            <h4 class="gold">Q2 2026 -- Foundation (Current)</h4>
+            <p>68+ ragas live, 8 genres, full AI pipeline, web + iOS apps deployed. Core product validated and generating tracks.</p>
+          </div>
+          <div class="timeline-item">
+            <h4>Q3 2026 -- Growth</h4>
+            <p>Launch subscription tiers, App Store release, add 30+ ragas (Carnatic tradition), implement user accounts and cloud library.</p>
+          </div>
+          <div class="timeline-item">
+            <h4>Q4 2026 -- Expansion</h4>
+            <p>API marketplace for developers, Android app, Spotify/Apple Music distribution, partnership with meditation platforms.</p>
+          </div>
+          <div class="timeline-item">
+            <h4>Q1 2027 -- Platform</h4>
+            <p>Community features (share, remix, collaborate), educational mode, enterprise white-label offering.</p>
+          </div>
+          <div class="timeline-item">
+            <h4>Q2 2027 -- Dominance</h4>
+            <p>100+ ragas, real-time generation, custom voice/instrument models, international expansion (Carnatic, Gamelan, Maqam).</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 class="ds-subsection-title" style="font-size:16px;margin-bottom:1.25rem">Key Milestones</h3>
+        <div class="metrics" style="grid-template-columns:1fr 1fr;gap:16px">
+          <div class="ds-glass-card metric"><div class="val">100+</div><div class="label">Ragas by Q1 2027</div></div>
+          <div class="ds-glass-card metric"><div class="val">10K+</div><div class="label">MAU Target (6mo)</div></div>
+          <div class="ds-glass-card metric"><div class="val">3</div><div class="label">Platforms</div></div>
+          <div class="ds-glass-card metric"><div class="val">$100K</div><div class="label">ARR Target (12mo)</div></div>
+        </div>
+
+        <div class="ds-glass-card" style="margin-top:1.25rem">
+          <h3 class="ds-subsection-title" style="font-size:16px">Technical Roadmap</h3>
+          <ul class="point-list">
+            <li>Real-time generation (streaming MIDI to audio)</li>
+            <li>Custom instrument models trained on classical recordings</li>
+            <li>Voice synthesis for vocal ragas (khayal, thumri)</li>
+            <li>Multi-raga composition (raga transitions)</li>
+            <li>Google Gemini integration for enhanced music understanding</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: The Ask -->
+<div class="slide" id="s8">
+  <div class="slide-inner">
+    <div class="ds-overline ds-reveal">The Ask</div>
+    <h2 class="ds-section-title ds-reveal">Seed Round</h2>
+
+    <div class="ds-glass-heavy ask-box ds-reveal">
+      <p class="ds-body-sm" style="color:var(--ds-text-secondary)">We are raising</p>
+      <div class="ask-amount">$500K</div>
+      <p class="ds-body-sm" style="color:var(--ds-text-secondary)">Pre-seed / Seed to capture the AI + Indian Music intersection</p>
+
+      <div class="ask-use">
+        <div class="ds-glass-card ask-item">
+          <div class="pct">40%</div>
+          <div class="desc">Engineering -- expand raga database, build real-time generation, launch Android</div>
+        </div>
+        <div class="ds-glass-card ask-item">
+          <div class="pct">25%</div>
+          <div class="desc">Growth -- community building, diaspora marketing, App Store optimization</div>
+        </div>
+        <div class="ds-glass-card ask-item">
+          <div class="pct">20%</div>
+          <div class="desc">AI/ML -- custom instrument models, voice synthesis, improved melody quality</div>
+        </div>
+        <div class="ds-glass-card ask-item">
+          <div class="pct">15%</div>
+          <div class="desc">Operations -- infrastructure, API costs, partnerships, legal</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart: AI Music Company Valuations -->
+    <div class="ds-glass-card chart-wrap ds-reveal">
+      <div class="label">AI Music Company Valuations & Funding ($M)</div>
+      <canvas id="chartAIValuations" height="120"></canvas>
+    </div>
+
+    <div class="ds-glass-card mermaid-wrap ds-reveal">
+      <div class="caption">Comparable Valuations in AI Music</div>
+      <pre class="mermaid">
+graph LR
+  A["Suno<br>$2.45B Valuation<br>$300M ARR"] --- D["AI Music<br>Generation Space"]
+  B["Udio<br>a16z-backed<br>WMG Licensed"] --- D
+  C["Endel<br>Acquired by WMG<br>$22M Raised"] --- D
+  E["Mubert<br>Funded<br>AI Music SaaS"] --- D
+  D --- F["Raga Radio<br>Cultural Niche<br>First Mover"]
+      </pre>
+    </div>
+
+    <div class="two-col ds-reveal" style="margin-top:2rem">
+      <div class="ds-glass-card">
+        <h3 class="ds-subsection-title" style="font-size:16px">Why Invest Now</h3>
+        <ul class="point-list">
+          <li><strong>Live product</strong> -- not a concept, full pipeline working in production</li>
+          <li><strong>Unique IP</strong> -- 68+ ragas encoded, no competitor has this data</li>
+          <li><strong>Massive market</strong> -- $46.7B streaming + 35.4M diaspora + AI music growth</li>
+          <li><strong>Cultural moat</strong> -- first-mover in AI-powered raga music</li>
+          <li><strong>Capital efficient</strong> -- built to current state with minimal resources</li>
+        </ul>
+      </div>
+      <div class="ds-glass-card">
+        <h3 class="ds-subsection-title" style="font-size:16px">Comparable Valuations</h3>
+        <ul class="point-list">
+          <li><strong>Suno</strong> -- $2.45B valuation, $300M ARR, $250M Series C (Nov 2025)<sup style="color:var(--ds-accent)">4</sup></li>
+          <li><strong>Udio</strong> -- a16z-backed ($10M seed); Warner Music Group licensing deal (Nov 2025)<sup style="color:var(--ds-accent)">5</sup></li>
+          <li><strong>Endel</strong> -- $22.1M total funding, acquired by Warner Music Group<sup style="color:var(--ds-accent)">6</sup></li>
+          <li><strong>Mubert</strong> -- VC-backed AI music SaaS for creators</li>
+          <li>Raga Radio targets the cultural niche these players ignore</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTNOTES -->
+<div class="ds-container" style="padding-top:0;padding-bottom:2rem">
+  <div class="ds-footnotes ds-reveal">
+    <div class="ds-overline" style="margin-bottom:.75rem">Sources</div>
+    <ol style="font-size:12px;color:var(--ds-text-tertiary);line-height:1.8;padding-left:1.25rem">
+      <li>Grand View Research, "Music Streaming Market Size & Share," 2024. Market valued at $46.66B in 2024, CAGR 14.9% to 2030.</li>
+      <li>Spherical Insights, "Generative AI in Music Market," 2025. Projected $2.92B in 2025, growing at 26.5% CAGR.</li>
+      <li>Ministry of External Affairs, India, "Population of Overseas Indians," Nov 2024. 35.42M total.</li>
+      <li>TechCrunch, "Suno raises $250M at $2.45B valuation," Nov 2025. Sacra estimates $300M ARR (Feb 2026).</li>
+      <li>Billboard, "Biggest AI Music Stories of 2025." Udio: $10M seed from a16z; Warner Music Group licensing deal (Nov 2025).</li>
+      <li>Music Ally / TechCrunch. Endel: $22.1M total funding across 5 rounds; acquired by Warner Music Group.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- SLIDE 9: Close -->
+<div class="slide" id="s9">
+  <div class="slide-inner" style="text-align:center">
+    <div class="ds-overline ds-reveal">Let's Talk</div>
+    <h1 class="ds-hero-title ds-reveal" style="color:var(--ds-text)">Raga Radio</h1>
+    <p class="tagline ds-reveal" style="max-width:460px;margin:0 auto">Preserving 2,000 years of musical genius.<br>One AI-generated raga at a time.</p>
+
+    <div class="metrics ds-reveal" style="max-width:500px;margin:2.5rem auto">
+      <div class="ds-glass-card metric"><div class="val">68+</div><div class="label">Ragas</div></div>
+      <div class="ds-glass-card metric"><div class="val">8</div><div class="label">Genres</div></div>
+      <div class="ds-glass-card metric"><div class="val">544+</div><div class="label">Combinations</div></div>
+    </div>
+
+    <p class="ds-reveal" style="color:var(--ds-text-secondary);font-size:14px;margin-top:2rem">
+      <a href="https://ragaradio.vercel.app" style="color:var(--ds-accent);text-decoration:none;font-weight:600">ragaradio.vercel.app</a>
+    </p>
+    <p class="ds-reveal" style="color:var(--ds-text-tertiary);font-size:12px;margin-top:.4rem">Built with Node.js, OpenAI GPT-4, Suno API, Cloudflare R2, Vercel, SwiftUI</p>
+  </div>
+</div>
+
+<!-- Active dot tracking -->
+<script>
+const dots = document.querySelectorAll('.nav-dot');
+const slides = document.querySelectorAll('.slide');
+const slideObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const idx = Array.from(slides).indexOf(entry.target);
+      dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    }
+  });
+}, { threshold: 0.5 });
+slides.forEach(s => slideObserver.observe(s));
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'neutral',
+  flowchart: { curve: 'basis', padding: 20 },
+  gantt: { fontSize: 12 }
+});
+
+/* Chart defaults */
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#6e6e73';
+
+/* Doughnut: Market Segments */
+new Chart(document.getElementById('chartMarketDoughnut'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Indian Diaspora Listeners', 'Meditation & Wellness', 'Content Creators', 'Music Education', 'Film & Media'],
+    datasets: [{
+      data: [35, 25, 20, 12, 8],
+      backgroundColor: ['#c17f24','#d4993a','#e2c47a','#a06818','#7a5012'],
+      borderColor: '#fff',
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
+      tooltip: { callbacks: { label: function(c){ return c.label + ': ' + c.raw + '%'; } } }
+    }
+  }
+});
+
+/* Bar: AI Music Valuations */
+new Chart(document.getElementById('chartAIValuations'), {
+  type: 'bar',
+  data: {
+    labels: ['Suno ($2.45B val)', 'Suno ARR', 'Suno Raised', 'Udio Seed', 'Endel Total'],
+    datasets: [{
+      label: '$M',
+      data: [2450, 300, 250, 10, 22],
+      backgroundColor: ['#c17f24','#d4993a','#e2c47a','#6e6e73','#6e6e73'],
+      borderRadius: 4,
+      borderWidth: 0
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: function(c){ return '$' + c.raw + 'M'; } } }
+    },
+    scales: {
+      x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { callback: function(v){ return '$' + v + 'M'; } } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+/* Area: Revenue by Tier Projection */
+new Chart(document.getElementById('chartRevenueTier'), {
+  type: 'line',
+  data: {
+    labels: ['Launch', 'Mo 3', 'Mo 6', 'Mo 9', 'Mo 12', 'Mo 18', 'Mo 24'],
+    datasets: [{
+      label: 'Creator ($24.99)',
+      data: [0.5, 2.5, 7.5, 15, 25, 50, 85],
+      borderColor: '#a06818',
+      backgroundColor: 'rgba(160,104,24,.15)',
+      fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3
+    },{
+      label: 'Premium ($9.99)',
+      data: [1, 5, 15, 30, 50, 100, 170],
+      borderColor: '#c17f24',
+      backgroundColor: 'rgba(193,127,36,.12)',
+      fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3
+    },{
+      label: 'Free (Ad/Upsell)',
+      data: [0, 0.5, 1.5, 3, 5, 10, 18],
+      borderColor: '#d4993a',
+      backgroundColor: 'rgba(212,153,58,.08)',
+      fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } } },
+    scales: {
+      y: { beginAtZero: true, stacked: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { callback: function(v){ return '$' + v + 'K'; } } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Reveal on scroll
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('visible');
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.ds-reveal').forEach(el => revealObserver.observe(el));
+</script>
+
+</body>
+</html>
