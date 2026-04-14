@@ -263,8 +263,10 @@ export async function downloadTracks(record, ragaName, options = {}) {
 // R2 key for metadata storage
 const METADATA_R2_KEY = 'raga-radio/tracks-metadata.json';
 
-// In-memory cache for metadata
+// In-memory cache for metadata (with TTL to prevent stale data in warm serverless instances)
 let metadataCache = null;
+let metadataCacheTime = 0;
+const METADATA_CACHE_TTL_MS = 60_000; // 60 seconds
 
 /**
  * Save track metadata to R2
@@ -286,6 +288,7 @@ async function saveTrackMetadata(newTracks) {
 
     // Update cache
     metadataCache = allTracks;
+    metadataCacheTime = Date.now();
 
     log.info(`Track metadata saved to R2`, { total: allTracks.length, new: uniqueNewTracks.length });
   } catch (error) {
@@ -299,8 +302,8 @@ async function saveTrackMetadata(newTracks) {
  * @returns {Promise<Array<object>>} Array of track info objects
  */
 export async function loadTrackMetadata() {
-  // Return cached data if available
-  if (metadataCache !== null) {
+  // Return cached data if still fresh
+  if (metadataCache !== null && (Date.now() - metadataCacheTime) < METADATA_CACHE_TTL_MS) {
     log.debug(`Returning cached metadata (${metadataCache.length} tracks)`);
     return metadataCache;
   }
@@ -310,6 +313,7 @@ export async function loadTrackMetadata() {
 
     if (data) {
       metadataCache = data;
+      metadataCacheTime = Date.now();
       log.info(`Loaded ${data.length} tracks from R2`);
       return data;
     }
