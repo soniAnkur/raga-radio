@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_raga-audio._tcp</string>
+		<string>_raga-audio._udp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Raga Radio uses the local network and Bluetooth to discover nearby devices and stream music to them.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Raga Radio uses Bluetooth to discover nearby devices and stream music to them.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+</dict>
+</plist>

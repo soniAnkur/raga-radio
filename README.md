@@ -837,6 +837,46 @@ let url = URL(string: "https://your-deployment.vercel.app")!
 - WebView integration
 - Full offline support (if localhost configured)
 - Native iOS playback controls
+- Nearby Broadcast: multi-device audio streaming (see below)
+
+### Nearby Broadcast (multi-device streaming)
+
+Stream the track playing on one phone to up to 8 nearby iPhones/iPads at
+once. Built on **MultipeerConnectivity**, which links devices over Bluetooth
+and peer-to-peer Wi-Fi — no router or internet needed on the listeners.
+Each connected device plays the stream through its own audio route
+(built-in speaker, or its own Bluetooth headphones/speaker), so a group of
+phones effectively becomes a multi-speaker system.
+
+> Note: iOS does not allow third-party apps to pair-stream A2DP audio to
+> multiple Bluetooth speakers from a single phone (that is Apple's private
+> "Share Audio" feature). Device-to-device streaming is the supported,
+> App-Store-legal way to play on many devices simultaneously.
+
+**How it works**:
+
+1. Tap the antenna button in the iOS app and choose **Host a broadcast**.
+2. Friends tap **Join a nearby broadcast** on their devices and pick your phone.
+3. Play any track in the app — the host captures it, plays it natively via
+   `AVAudioEngine`, encodes the mixer output to AAC (128 kbps), and streams
+   the packets to every connected listener.
+4. Listeners decode and play with a short jitter buffer (~250 ms).
+
+**Implementation** (`IOSApp/raag/raag/Broadcast/`):
+
+| File | Role |
+|------|------|
+| `PeerSessionManager.swift` | MultipeerConnectivity discovery + transport |
+| `AudioBroadcaster.swift` | Host: native playback, AAC encode, packet send |
+| `PeerAudioReceiver.swift` | Listener: AAC decode, jitter buffer, playback |
+| `BroadcastMessages.swift` | Wire protocol (control JSON + audio frames) |
+| `BroadcastViewModel.swift` | Session/role orchestration |
+| `BroadcastView.swift` | SwiftUI UI |
+
+The WebView injects a small script that reports `play` events from the web
+app's `<audio>` elements to native code, so the currently playing track is
+captured automatically and the web player is silenced while the native
+engine streams.
 
 ---
 
