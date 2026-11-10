@@ -22,7 +22,7 @@ export async function POST(
       // empty body is ok — metadata is optional
     }
 
-    const { ragaName, ragaId, instruments, referenceAudioUrl, midiFileUrl, genre } = body;
+    const { ragaName, ragaId, instruments, referenceAudioUrl, midiFileUrl, genre, tonic } = body;
 
     // Fetch current status (should already be complete since frontend confirmed)
     const record = await getTaskStatus(taskId);
@@ -33,6 +33,7 @@ export async function POST(
       genre,
       referenceAudioUrl,
       midiFileUrl,
+      tonic,
     } as any);
 
     return NextResponse.json({

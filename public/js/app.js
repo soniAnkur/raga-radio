@@ -1316,6 +1316,12 @@ async function runGenerationPipeline(raga, mode, genMode, genContext, params) {
       return;
     }
 
+    // Keep what the server composed, so the finished track is stored with
+    // its reference melody and can be checked against the right Sa
+    genContext.referenceAudioUrl = data.referenceAudio || null;
+    genContext.midiFileUrl = data.midiFile || null;
+    genContext.tonic = data.melody?.tonic || null;
+
     const taskId = data.taskId;
     if (taskId) {
       await pollGenerationStatus(taskId, genMode, genContext);
@@ -1377,6 +1383,9 @@ async function downloadTrack(taskId, genContext) {
         ragaId: raga.id,
         instruments: genContext.instruments,
         genre: genContext.genreId,
+        referenceAudioUrl: genContext.referenceAudioUrl,
+        midiFileUrl: genContext.midiFileUrl,
+        tonic: genContext.tonic,
       }),
     });
     const data = await response.json();

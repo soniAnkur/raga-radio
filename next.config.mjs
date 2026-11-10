@@ -4,6 +4,7 @@ const nextConfig = {
     'express',
     'midi-writer-js',
     'wav',
+    'mpg123-decoder',
   ],
 
   async headers() {

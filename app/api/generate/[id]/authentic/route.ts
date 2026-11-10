@@ -14,6 +14,10 @@ import { buildMidi } from '@/src/generators/midiBuilder.js';
 import { renderToWav } from '@/src/services/synthesizer.js';
 import { uploadFileToR2, isR2Configured } from '@/src/services/cloudflare-r2.js';
 import appConfig from '@/src/config.js';
+import { composeReference, pitchToSwara } from '@/raga-engine/index.js';
+
+// Flats, to match the note names the prompt builders use
+const TONICS = ['C', 'Db', 'D', 'Eb', 'E'];
 
 export const maxDuration = 120;
 
@@ -23,15 +27,30 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  const body = await request.json();
+  let body: any = {};
+  try {
+    body = await request.json();
+  } catch {
+    // empty body is fine: every option has a default
+  }
   const {
     instruments: rawInstruments = ['sitar', 'tabla'],
     duration = 60,
     genre = null,
     useAIPrompt = true,
+    engine = 'phrase',
+    tonic: requestedTonic = null,
+    seed = null,
+    // Tanpura-style drone under the reference melody. Default: on when tanpura is among the instruments
+    drone: droneOption = null,
+    // How closely Suno follows the uploaded melody (0-1) and how far it may wander (0-1)
+    audioWeight = 0.8,
+    weirdnessConstraint = 0.2,
+    styleWeight = 0.65,
   } = body;
 
   const instrumentList = Array.isArray(rawInstruments) ? rawInstruments : [rawInstruments];
+  const drone = droneOption ?? instrumentList.includes('tanpura');
 
   try {
     checkApiKey();
@@ -67,38 +86,85 @@ export async function POST(
 
     const fileId = uuidv4().slice(0, 8);
     const baseFilename = `melody_${raga.name.toLowerCase().replace(/\s+/g, '_')}_${fileId}`;
+    const { uploadBufferToR2 } = await import('@/src/services/cloudflare-r2.js');
 
-    // Step 1: Generate alap melody (AI if available, otherwise algorithmic)
+    // A different key each time keeps tracks from all sitting in C
+    const tonic = requestedTonic || TONICS[Math.floor(Math.random() * TONICS.length)];
+
+    // Step 1: Compose the melody.
+    // Default: the phrase engine, which only produces moves the raga allows and
+    // checks its own output. `engine: "legacy"` keeps the older generators.
     let events: any;
     let summary: any;
     let generatorType: string;
+    let wavBuffer: Buffer | null = null;
+    let melodyCheck: any = null;
 
-    if (isAIConfigured()) {
-      generatorType = 'AI';
+    if (engine !== 'legacy') {
       try {
-        const aiGenerator = new AIMelodyGenerator(raga, {
+        const composed = composeReference(raga, {
+          id,
           duration: parseInt(String(duration)),
-          tonic: appConfig.defaultTonic,
+          tonic,
+          seed: seed ?? undefined,
+          drone,
         });
-        events = await aiGenerator.generate();
-        summary = AIMelodyGenerator.getSummary(events);
-      } catch (aiError: any) {
-        generatorType = 'Algorithmic (AI fallback)';
+        generatorType = 'Phrase engine';
+        wavBuffer = composed.wav;
+        melodyCheck = { valid: composed.check.valid, seed: composed.seed, tonic };
+        // Same notes in the shape the MIDI builder expects
+        events = composed.events.map((e: any) => ({
+          midiNote: composed.tonicMidi + e.pitch,
+          swara: pitchToSwara(e.pitch),
+          startTime: e.start,
+          duration: e.dur,
+          velocity: Math.round(60 + 40 * e.vel),
+          phase: e.section,
+        }));
+        const phases: Record<string, number> = {};
+        for (const e of composed.events) phases[e.section] = (phases[e.section] || 0) + 1;
+        summary = {
+          noteCount: composed.events.length,
+          totalDuration: composed.duration.toFixed(2),
+          vadiCount: composed.events.filter((e: any) => ((e.pitch % 12) + 12) % 12 === composed.grammar.vadi).length,
+          phases,
+          ornaments: composed.ornaments,
+          structure: 'alap-jor-taan',
+        };
+      } catch (engineError: any) {
+        // e.g. a raga whose data has no usable aaroha/avaroha
+        generatorType = '';
+      }
+    }
+
+    if (!wavBuffer) {
+      if (isAIConfigured()) {
+        generatorType = 'AI';
+        try {
+          const aiGenerator = new AIMelodyGenerator(raga, {
+            duration: parseInt(String(duration)),
+            tonic,
+          });
+          events = await aiGenerator.generate();
+          summary = AIMelodyGenerator.getSummary(events);
+        } catch (aiError: any) {
+          generatorType = 'Algorithmic (AI fallback)';
+          const generator = new AlapGenerator(raga, {
+            duration: parseInt(String(duration)),
+            tonic,
+          });
+          events = generator.generate();
+          summary = AlapGenerator.getSummary(events);
+        }
+      } else {
+        generatorType = 'Algorithmic';
         const generator = new AlapGenerator(raga, {
           duration: parseInt(String(duration)),
-          tonic: appConfig.defaultTonic,
+          tonic,
         });
         events = generator.generate();
         summary = AlapGenerator.getSummary(events);
       }
-    } else {
-      generatorType = 'Algorithmic';
-      const generator = new AlapGenerator(raga, {
-        duration: parseInt(String(duration)),
-        tonic: appConfig.defaultTonic,
-      });
-      events = generator.generate();
-      summary = AlapGenerator.getSummary(events);
     }
 
     // Step 2: Build MIDI file and upload to R2
@@ -107,16 +173,19 @@ export async function POST(
       trackName: `Raga ${raga.name} - ${raga.thaat} Thaat`,
     });
     const midiFilename = `${baseFilename}.mid`;
-    const { uploadBufferToR2 } = await import('@/src/services/cloudflare-r2.js');
     const midiUrl = await uploadBufferToR2(Buffer.from(midiBuffer), midiFilename, 'audio/midi');
 
-    // Step 3: Render to WAV audio
+    // Steps 3-4: Reference audio to R2. The phrase engine renders in memory;
+    // the legacy path renders to a temp file first.
     const wavFilename = `${baseFilename}.wav`;
-    const wavPath = join(appConfig.temp.dir, wavFilename);
-    await renderToWav(events, wavPath);
-
-    // Step 4: Upload WAV to Cloudflare R2
-    const uploadUrl = await uploadFileToR2(wavPath, wavFilename, 'audio/wav');
+    let uploadUrl: string;
+    if (wavBuffer) {
+      uploadUrl = await uploadBufferToR2(wavBuffer, wavFilename, 'audio/wav');
+    } else {
+      const wavPath = join(appConfig.temp.dir, wavFilename);
+      await renderToWav(events, wavPath);
+      uploadUrl = await uploadFileToR2(wavPath, wavFilename, 'audio/wav');
+    }
 
     // Step 5: Build cover prompt with instruments and submit to Suno
     let coverPayload: any;
@@ -124,18 +193,20 @@ export async function POST(
     if (useAIPrompt && isAIPromptAvailable()) {
       try {
         coverPayload = await buildAICoverPrompt(raga, selectedGenre, instrumentList, {
-          tonic: appConfig.defaultTonic,
+          tonic,
         });
       } catch (aiError: any) {
         coverPayload = buildCoverPrompt(raga, instrumentList, {
-          tonic: appConfig.defaultTonic,
+          tonic,
         });
       }
     } else {
       coverPayload = buildCoverPrompt(raga, instrumentList, {
-        tonic: appConfig.defaultTonic,
+        tonic,
       });
     }
+
+    coverPayload = { ...coverPayload, audioWeight, weirdnessConstraint, styleWeight };
 
     const taskId = await generateFromUpload(uploadUrl, coverPayload);
 
@@ -155,6 +226,8 @@ export async function POST(
         ornaments: summary.ornaments,
         generatedBy: generatorType,
         structure: summary.structure || 'legacy',
+        tonic,
+        check: melodyCheck,
       },
       prompt: {
         generatedBy: coverPayload.generatedBy || 'template',

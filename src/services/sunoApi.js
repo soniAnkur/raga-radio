@@ -8,6 +8,8 @@ import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { createLogger } from '../utils/logger.js';
 import { uploadBufferToR2, isR2Configured, getJsonFromR2, putJsonToR2 } from './cloudflare-r2.js';
+import { getRaga } from '../data/ragas.js';
+import { buildGrammar, withPhrases, certifyAudio, tonicToMidi } from '../../raga-engine/index.js';
 
 const log = createLogger('SunoAPI');
 
@@ -230,6 +232,8 @@ export async function downloadTracks(record, ragaName, options = {}) {
         log.info(`Track saved locally`, { filename, localPath });
       }
 
+      const ragaCheck = await checkTrackAgainstRaga(buffer, options.ragaId || ragaName, options.tonic);
+
       const trackInfo = {
         filename,
         url: finalUrl,
@@ -240,9 +244,11 @@ export async function downloadTracks(record, ragaName, options = {}) {
         genre: options.genre || 'indianClassical',
         referenceAudioUrl: options.referenceAudioUrl,
         midiFileUrl: options.midiFileUrl,
+        tonic: options.tonic || null,
         createdAt: new Date().toISOString(),
         duration: track.duration || null,
         sunoId: track.id || null,
+        ragaCheck,
       };
 
       processedTracks.push(trackInfo);
@@ -260,11 +266,60 @@ export async function downloadTracks(record, ragaName, options = {}) {
   return processedTracks;
 }
 
+/**
+ * Listen to a finished track and estimate how much of its held melody sits on
+ * notes outside the raga. Never blocks a download: any failure returns null.
+ * @param {Buffer} mp3Buffer - The generated audio
+ * @param {string} ragaKey - Raga id or name
+ * @param {string|null} tonic - The Sa the reference melody was written in (e.g. "D"). Without it the key is estimated.
+ * @returns {Promise<object|null>} { verdict, offRagaShare, offRagaNotes, tonic }
+ */
+export async function checkTrackAgainstRaga(mp3Buffer, ragaKey, tonic = null) {
+  try {
+    const raga = ragaKey ? getRaga(ragaKey) : null;
+    if (!raga) return null;
+    const grammar = buildGrammar(withPhrases(raga, ragaKey));
+    const { MPEGDecoder } = await import('mpg123-decoder');
+    const decoder = new MPEGDecoder();
+    await decoder.ready;
+    const { channelData, sampleRate } = decoder.decode(new Uint8Array(mp3Buffer));
+    decoder.free();
+    const left = channelData[0];
+    if (!left || left.length === 0) return null;
+    const right = channelData[1] || left;
+    const mono = new Float32Array(left.length);
+    for (let i = 0; i < left.length; i++) mono[i] = 0.5 * (left[i] + right[i]);
+    const result = certifyAudio(mono, sampleRate, {
+      ragaNotes: grammar.pcs,
+      tonicMidi: tonic ? tonicToMidi(tonic) : undefined,
+    });
+    log.info('Raga check', { raga: raga.name, verdict: result.verdict, offRagaShare: result.offRagaShare, tonic: result.tonic });
+    return {
+      verdict: result.verdict,
+      offRagaShare: result.offRagaShare,
+      offRagaNotes: result.offRagaNotes,
+      tonic: result.tonic,
+      tonicSource: tonic ? 'reference' : 'estimated',
+    };
+  } catch (error) {
+    log.warn('Raga check skipped', { error: error.message });
+    return null;
+  }
+}
+
 // R2 key for metadata storage
 const METADATA_R2_KEY = 'raga-radio/tracks-metadata.json';
 
-// In-memory cache for metadata
+// In-memory cache for metadata. Short-lived, so a warm server instance
+// picks up tracks written by another instance within a minute.
+const METADATA_CACHE_TTL_MS = 60 * 1000;
 let metadataCache = null;
+let metadataCachedAt = 0;
+
+function setMetadataCache(tracks) {
+  metadataCache = tracks;
+  metadataCachedAt = Date.now();
+}
 
 /**
  * Save track metadata to R2
@@ -272,8 +327,10 @@ let metadataCache = null;
  */
 async function saveTrackMetadata(newTracks) {
   try {
-    // Load existing tracks from R2
-    let existingTracks = await loadTrackMetadata();
+    // Read the current list straight from R2. This read must succeed: if it
+    // failed and we carried on with an empty list, the write below would
+    // replace the whole library with only the new tracks.
+    const existingTracks = await loadTrackMetadata({ fresh: true, strict: true });
 
     // Merge new tracks (avoid duplicates by sunoId)
     const existingIds = new Set(existingTracks.map(t => t.sunoId).filter(Boolean));
@@ -284,8 +341,7 @@ async function saveTrackMetadata(newTracks) {
     // Save to R2
     await putJsonToR2(METADATA_R2_KEY, allTracks);
 
-    // Update cache
-    metadataCache = allTracks;
+    setMetadataCache(allTracks);
 
     log.info(`Track metadata saved to R2`, { total: allTracks.length, new: uniqueNewTracks.length });
   } catch (error) {
@@ -298,9 +354,9 @@ async function saveTrackMetadata(newTracks) {
  * Load all track metadata from R2
  * @returns {Promise<Array<object>>} Array of track info objects
  */
-export async function loadTrackMetadata() {
-  // Return cached data if available
-  if (metadataCache !== null) {
+export async function loadTrackMetadata({ fresh = false, strict = false } = {}) {
+  const cacheIsWarm = metadataCache !== null && Date.now() - metadataCachedAt < METADATA_CACHE_TTL_MS;
+  if (!fresh && cacheIsWarm) {
     log.debug(`Returning cached metadata (${metadataCache.length} tracks)`);
     return metadataCache;
   }
@@ -308,10 +364,13 @@ export async function loadTrackMetadata() {
   try {
     const data = await getJsonFromR2(METADATA_R2_KEY);
 
-    if (data) {
-      metadataCache = data;
+    if (Array.isArray(data)) {
+      setMetadataCache(data);
       log.info(`Loaded ${data.length} tracks from R2`);
       return data;
+    }
+    if (data) {
+      throw new Error('Track metadata in R2 is not a list');
     }
 
     // No metadata file in R2 yet
@@ -319,7 +378,9 @@ export async function loadTrackMetadata() {
     return [];
   } catch (error) {
     log.error('Failed to load track metadata from R2', { error: error.message });
-    return [];
+    if (strict) throw error;
+    // For read-only callers a stale list beats an empty library
+    return metadataCache || [];
   }
 }
 
@@ -361,14 +422,15 @@ export async function generateFromUpload(uploadUrl, payload) {
     title: payload.title,
     customMode: true,
     instrumental: true,
-    model: payload.model || 'V5',
+    model: process.env.SUNO_COVER_MODEL || payload.model || 'V5',
     callBackUrl: payload.callBackUrl || 'https://example.com/callback',
     // Negative tags to exclude unwanted instruments
     negativeTags: payload.negativeTags || '',
     // Optional parameters
-    styleWeight: payload.styleWeight || 0.7,
-    weirdnessConstraint: payload.weirdnessConstraint || 0.3,
-    audioWeight: payload.audioWeight || 0.6,
+    styleWeight: payload.styleWeight ?? 0.7,
+    weirdnessConstraint: payload.weirdnessConstraint ?? 0.3,
+    // How closely Suno follows the uploaded melody
+    audioWeight: payload.audioWeight ?? 0.6,
   };
 
   log.debug('Upload-cover payload', requestBody);
