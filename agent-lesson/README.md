@@ -83,3 +83,13 @@ Try:
 - Ask again and answer `y`. You get a task id, the key and a summary of the guide melody. The audio is not ready yet; that is chapter 5.
 
 Notice: tools that read can run freely. Tools that spend or change things need a gate, and the gate lives in our code, not in the model's good intentions. If Raga Radio refuses the request, this chapter crashes. Chapter 6 deals with that.
+
+## Chapter 5: waiting, and carrying state
+
+A song takes a few minutes. `check_song` waits up to a minute inside the tool and reports `processing` or `complete`. `save_song` stores the finished track and returns links and a raga check.
+
+Try:
+- `Make me an energetic morning track with guitar.` Approve it, then watch it check, check again, and save.
+- Read the `save_song` request it prints. The task id, key and reference link all came from the `start_song` result several steps earlier.
+
+Notice two things. The waiting is done by code, because every trip to the model costs money and a `sleep` does not. And the agent has no variables of its own: its memory of the task id is the `messages` list, which is why every result has to go back into it.

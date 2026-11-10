@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Raga agent, chapter 4: tools that act.
+// Raga agent, chapter 5: waiting, and carrying state.
 //
 // Run:  ANTHROPIC_API_KEY=... RAGA_API_KEY=... node agent.js
 // Needs Node 18 or newer. No packages to install.
@@ -31,7 +31,8 @@ const SYSTEM = `You are a music assistant for Raga Radio, an app that makes trac
 based on Indian classical ragas. Keep answers short.
 Use your tools for facts about ragas and styles instead of answering from memory.
 When someone asks for a track: pick a raga for the time of day, choose a style and
-instruments that fit what they asked for, then start the song. Say what you chose and why.`;
+instruments that fit what they asked for, then start the song. Say what you chose and why.
+After starting a song, check it until it is complete, save it, and give the person the links.`;
 
 // ---- tools ----
 // A tool has two halves. This half is for the model: a name, a description
@@ -84,6 +85,38 @@ const tools = [
       required: ['raga_id', 'style_id', 'instruments'],
     },
   },
+  {
+    name: 'check_song',
+    description:
+      'Check on a song started with start_song. Waits up to a minute for it to finish, then reports ' +
+      '"processing" or "complete". If it is still processing, call check_song again. Songs take two to five minutes.',
+    input_schema: {
+      type: 'object',
+      properties: { task_id: { type: 'string', description: 'The task_id returned by start_song' } },
+      required: ['task_id'],
+    },
+  },
+  {
+    name: 'save_song',
+    description:
+      'Save a complete song to the Raga Radio library. Returns a permanent link for each version (Suno makes two) ' +
+      'and a raga check: the share of held notes that fall outside the raga, where lower is better. ' +
+      'Call this once, after check_song reports "complete". Pass along the values start_song returned.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'string' },
+        raga_id: { type: 'string' },
+        raga_name: { type: 'string' },
+        style_id: { type: 'string' },
+        instruments: { type: 'array', items: { type: 'string' } },
+        key: { type: 'string', description: 'The key from start_song, such as "D"' },
+        reference_audio: { type: 'string', description: 'The reference_audio link from start_song' },
+        midi_file: { type: 'string', description: 'The midi_file link from start_song' },
+      },
+      required: ['task_id', 'raga_id', 'raga_name', 'style_id', 'instruments'],
+    },
+  },
 ];
 
 // Tools that only read are safe to run whenever the model asks. Tools that
@@ -130,7 +163,42 @@ const handlers = {
       midi_file: data.midiFile,
     };
   },
+
+  // The waiting happens here, in code, where it is free. If the model had to
+  // ask "is it done yet?" every few seconds, each ask would be a paid trip.
+  async check_song({ task_id }) {
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const data = await ragaApi(`/api/status/${task_id}`);
+      const versions = data.response?.sunoData || [];
+      const ready = versions.length >= 2 && versions.every((v) => v.audioUrl || v.audio_url);
+      if (data.status === 'complete' && ready) {
+        return { status: 'complete', versions: versions.map((v) => ({ title: v.title, seconds: Math.round(v.duration) })) };
+      }
+      if (data.status === 'error') return { status: 'failed', reason: data.errorMessage || 'Suno reported an error' };
+      await sleep(10_000);
+    }
+    return { status: 'processing', note: 'Not finished yet. Call check_song again.' };
+  },
+
+  async save_song({ task_id, raga_id, raga_name, style_id, instruments, key, reference_audio, midi_file }) {
+    const data = await ragaApi(`/api/download/${task_id}`, {
+      method: 'POST',
+      body: {
+        ragaId: raga_id, ragaName: raga_name, genre: style_id, instruments,
+        tonic: key, referenceAudioUrl: reference_audio, midiFileUrl: midi_file,
+      },
+    });
+    return data.tracks.map((track) => ({
+      link: track.url,
+      seconds: Math.round(Number(track.duration)) || null,
+      raga_check: track.ragaCheck
+        ? { verdict: track.ragaCheck.verdict, share_off_raga: track.ragaCheck.offRagaShare }
+        : 'not available',
+    }));
+  },
 };
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // The whole conversation. The model has no memory of its own: every request
 // sends this entire list, and what comes back is appended to it.
@@ -159,7 +227,7 @@ const textOf = (reply) => reply.content.filter((b) => b.type === 'text').map((b)
 //   ask the model -> it requests tools -> run them -> send results -> ask again
 // and so on, until it stops requesting tools and answers. The model decides
 // how many trips and which tools. This loop is what makes it an agent.
-const MAX_STEPS = 8; // a ceiling, so a confused model cannot loop forever
+const MAX_STEPS = 15; // a ceiling, so a confused model cannot loop forever
 
 async function runTurn() {
   for (let step = 1; step <= MAX_STEPS; step++) {
@@ -203,7 +271,7 @@ async function ask(prompt) {
   return done ? null : value.trim();
 }
 
-console.log('Raga agent, chapter 4. Type a message, or "exit" to quit.\n');
+console.log('Raga agent, chapter 5. Type a message, or "exit" to quit.\n');
 while (true) {
   const input = await ask('you > ');
   if (input === null || input === 'exit') break;
