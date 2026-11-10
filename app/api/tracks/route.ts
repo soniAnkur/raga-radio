@@ -3,6 +3,19 @@ import { loadTrackMetadata } from '@/src/services/sunoApi.js';
 import { getAllRagas } from '@/src/data/ragas.js';
 import { getScaleNotes } from '@/src/converters/swaraConverter.js';
 
+const normalizeKey = (value: unknown) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+// Spellings that scripts outside the app have written into the library
+const RAGA_ALIASES: Record<string, string> = {
+  alhaiyabilaval: 'alhaiyabilawal',
+};
+
+// "indian_classical" and "indian-classical" are the same genre as "indianClassical"
+function normalizeGenre(genre: unknown) {
+  if (!genre) return 'indianClassical';
+  return String(genre).replace(/[_-]+([a-zA-Z])/g, (_, c) => c.toUpperCase());
+}
+
 export async function GET() {
   try {
     // Load tracks from R2 metadata
@@ -13,14 +26,12 @@ export async function GET() {
     const enhancedTracks = metadataTracks.map((track: any) => {
       let ragaInfo: any = null;
 
-      // Find raga by ID or name
-      const ragaKey = track.ragaId || track.ragaName?.toLowerCase().replace(/\s+/g, '');
-      if (ragaKey) {
+      // Find raga by ID or name, ignoring case, spaces, hyphens and underscores
+      const ragaKey = normalizeKey(track.ragaId || track.ragaName);
+      const lookup = RAGA_ALIASES[ragaKey] || ragaKey;
+      if (lookup) {
         for (const [key, raga] of Object.entries(allRagas) as [string, any][]) {
-          if (
-            key.toLowerCase() === ragaKey.toLowerCase() ||
-            raga.name.toLowerCase().replace(/\s+/g, '') === ragaKey.toLowerCase()
-          ) {
+          if (normalizeKey(key) === lookup || normalizeKey(raga.name) === lookup) {
             ragaInfo = {
               id: key,
               name: raga.name,
@@ -40,12 +51,13 @@ export async function GET() {
       return {
         ...track,
         raga: ragaInfo,
-        genre: track.genre || 'indianClassical',
+        genre: normalizeGenre(track.genre),
       };
     }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return NextResponse.json({ success: true, tracks: enhancedTracks });
   } catch (error: any) {
-    return NextResponse.json({ success: true, tracks: [] });
+    console.error('[tracks] failed to build track list:', error?.message);
+    return NextResponse.json({ success: true, tracks: [], warning: error?.message || 'Could not load tracks' });
   }
 }

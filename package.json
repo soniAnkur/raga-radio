@@ -11,7 +11,8 @@
     "express": "node src/server.js",
     "express:dev": "nodemon src/server.js",
     "generate": "node src/index.js",
-    "preview": "node src/index.js --preview"
+    "preview": "node src/index.js --preview",
+    "test:engine": "node --test raga-engine/engine.test.mjs"
   },
   "keywords": [
     "raga",
@@ -30,6 +31,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "midi-writer-js": "^3.1.1",
+    "mpg123-decoder": "^1.0.3",
     "next": "^16.2.3",
     "openai": "^6.15.0",
     "react": "^19.2.5",

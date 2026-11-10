@@ -12,3 +12,4 @@ logs
 tests
 pipeline-diagram.html
 presentation-*.html
+raga-engine/node_modules

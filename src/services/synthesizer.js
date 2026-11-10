@@ -6,7 +6,8 @@
  * we only need a pitch-accurate reference audio. Simple sine waves suffice.
  */
 
-import { createWriteStream } from 'fs';
+import { mkdirSync } from 'fs';
+import { dirname } from 'path';
 import { FileWriter } from 'wav';
 
 const SAMPLE_RATE = 44100;
@@ -80,12 +81,18 @@ export async function renderToWav(events, outputPath) {
       // Sort events by start time
       const sortedEvents = [...events].sort((a, b) => a.startTime - b.startTime);
 
+      // The folder may not exist yet (on Vercel only /tmp is writable and starts empty)
+      mkdirSync(dirname(outputPath), { recursive: true });
+
       // Create WAV file writer
       const writer = new FileWriter(outputPath, {
         sampleRate: SAMPLE_RATE,
         bitDepth: BIT_DEPTH,
         channels: CHANNELS,
       });
+      // File errors surface on the underlying stream, not on the writer
+      writer.on('error', reject);
+      if (writer.file) writer.file.on('error', reject);
 
       let currentTime = 0;
 
