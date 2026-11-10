@@ -1140,6 +1140,10 @@ async function fetchLibraryTracks() {
     const data = await response.json();
     if (data.success) {
       state.libraryTracks = data.tracks;
+      // The list may have changed under the track that is playing: find it again
+      if (state.currentTrack) {
+        state.currentTrackIndex = state.libraryTracks.findIndex(t => t.url === state.currentTrack.url);
+      }
       renderLibrary();
       // Re-render home to update play buttons on cards
       if (state.ragas.length > 0) renderHome();
@@ -1859,9 +1863,45 @@ window.addEventListener('unhandledrejection', function(e) {
   showToast('Promise Error: ' + (e.reason?.message || e.reason));
 });
 
+// ============================================
+// Staying current
+// ============================================
+// The app can stay open for days, on a phone especially. Without this it
+// would keep playing from the track list it loaded at the start, and keep
+// running old code after a new version is deployed.
+const REFRESH_EVERY_MS = 5 * 60 * 1000;
+let loadedBuild = null;
+let lastRefresh = Date.now();
+
+async function refreshApp() {
+  lastRefresh = Date.now();
+  try {
+    const data = await (await fetch('/api/features', { cache: 'no-store' })).json();
+    const build = data.build;
+    if (build && build !== 'dev') {
+      if (loadedBuild === null) loadedBuild = build;
+      const idle = !state.isPlaying && state.generatingRagas.size === 0;
+      if (build !== loadedBuild && idle) {
+        window.location.reload(); // a new version is live and nothing would be interrupted
+        return;
+      }
+    }
+  } catch { /* offline: try again next time */ }
+  fetchLibraryTracks();
+}
+
+function startStayingCurrent() {
+  refreshApp();
+  setInterval(refreshApp, REFRESH_EVERY_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - lastRefresh > 60 * 1000) refreshApp();
+  });
+}
+
 // Start — support both direct load and dynamic injection (where DOMContentLoaded already fired)
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => { init(); startStayingCurrent(); });
 } else {
   init();
+  startStayingCurrent();
 }

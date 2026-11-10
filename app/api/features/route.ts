@@ -7,6 +7,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       features: { ...features, requiresKey: isApiKeyRequired() },
+      build: process.env.VERCEL_GIT_COMMIT_SHA || 'dev',
     });
   } catch (error: any) {
     return NextResponse.json(

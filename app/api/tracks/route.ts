@@ -16,10 +16,11 @@ function normalizeGenre(genre: unknown) {
   return String(genre).replace(/[_-]+([a-zA-Z])/g, (_, c) => c.toUpperCase());
 }
 
-// The library shows V2 tracks: everything made since the phrase engine went
-// live. Older tracks stay in R2 and in the metadata file, and come back with
-// /api/tracks?all=1 or by moving LIBRARY_SINCE earlier.
-const LIBRARY_SINCE = process.env.LIBRARY_SINCE || '2026-11-10T00:00:00.000Z';
+// The library and the radio show only tracks made by the current engine:
+// everything since the through-composed guide melodies went live (9 Nov 2026,
+// 6:45 pm Pacific). Older tracks stay in R2 and in the metadata file, and
+// come back with /api/tracks?all=1 or by moving LIBRARY_SINCE earlier.
+const LIBRARY_SINCE = process.env.LIBRARY_SINCE || '2026-11-10T02:45:00.000Z';
 
 export async function GET(request: NextRequest) {
   try {

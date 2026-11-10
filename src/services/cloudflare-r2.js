@@ -187,7 +187,7 @@ export async function getJsonFromR2(key) {
  * @param {object} data - Data to save as JSON
  * @returns {Promise<string>} Public URL of uploaded file
  */
-export async function putJsonToR2(key, data) {
+export async function putJsonToR2(key, data, { ifMatch } = {}) {
   log.debug(`Uploading JSON to R2: ${key}`);
 
   try {
@@ -201,6 +201,8 @@ export async function putJsonToR2(key, data) {
       Body: content,
       ContentType: 'application/json',
       CacheControl: 'no-cache, no-store, must-revalidate',
+      // Only write if the object is still the version we read
+      ...(ifMatch ? { IfMatch: ifMatch } : {}),
     });
 
     await r2Client.send(command);
@@ -210,7 +212,37 @@ export async function putJsonToR2(key, data) {
     return fileUrl;
 
   } catch (error) {
-    log.error('R2 JSON upload failed', { error: error.message, key });
+    if (isPreconditionFailed(error)) {
+      log.debug(`R2 object changed since it was read: ${key}`);
+    } else {
+      log.error('R2 JSON upload failed', { error: error.message, key });
+    }
+    throw error;
+  }
+}
+
+/** True when a conditional write was refused because the object had changed */
+export function isPreconditionFailed(error) {
+  return error?.name === 'PreconditionFailed' || error?.$metadata?.httpStatusCode === 412;
+}
+
+/**
+ * Get JSON from R2 together with its version tag (ETag), for read-modify-write.
+ * @param {string} key - Object key
+ * @returns {Promise<{data: object|null, etag: string|null}>} data is null if the object does not exist
+ */
+export async function getJsonWithVersionFromR2(key) {
+  try {
+    const { bucketName } = getR2Config();
+    const r2Client = createR2Client();
+    const response = await r2Client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
+    const data = JSON.parse(await response.Body.transformToString());
+    return { data, etag: response.ETag || null };
+  } catch (error) {
+    if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      return { data: null, etag: null };
+    }
+    log.error('R2 download failed', { error: error.message, key });
     throw error;
   }
 }

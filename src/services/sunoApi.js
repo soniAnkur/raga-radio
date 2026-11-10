@@ -7,7 +7,7 @@ import config from '../config.js';
 import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { createLogger } from '../utils/logger.js';
-import { uploadBufferToR2, isR2Configured, getJsonFromR2, putJsonToR2 } from './cloudflare-r2.js';
+import { uploadBufferToR2, isR2Configured, getJsonFromR2, putJsonToR2, getJsonWithVersionFromR2, isPreconditionFailed } from './cloudflare-r2.js';
 import { getRaga } from '../data/ragas.js';
 import { buildGrammar, withPhrases, certifyAudio, tonicToMidi } from '../../raga-engine/index.js';
 
@@ -326,24 +326,40 @@ function setMetadataCache(tracks) {
  * @param {Array<object>} newTracks - New tracks to save
  */
 async function saveTrackMetadata(newTracks) {
+  // The library is one JSON file, so saving is read, add, write. Two saves
+  // that overlap would each read the same list and the second write would
+  // drop the first one's tracks. To prevent that, each write is conditional
+  // on the file being unchanged since it was read, and is then read back to
+  // confirm the new tracks are there. Anything else starts over.
+  const sameTrack = (a, b) => (a.sunoId && a.sunoId === b.sunoId) || a.url === b.url;
+  const MAX_ATTEMPTS = 6;
+
   try {
-    // Read the current list straight from R2. This read must succeed: if it
-    // failed and we carried on with an empty list, the write below would
-    // replace the whole library with only the new tracks.
-    const existingTracks = await loadTrackMetadata({ fresh: true, strict: true });
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      // This read must succeed: carrying on with an empty list would replace
+      // the whole library with only the new tracks.
+      const { data, etag } = await getJsonWithVersionFromR2(METADATA_R2_KEY);
+      if (data !== null && !Array.isArray(data)) throw new Error('Track metadata in R2 is not a list');
+      const existingTracks = data || [];
 
-    // Merge new tracks (avoid duplicates by sunoId)
-    const existingIds = new Set(existingTracks.map(t => t.sunoId).filter(Boolean));
-    const uniqueNewTracks = newTracks.filter(t => !t.sunoId || !existingIds.has(t.sunoId));
+      const missing = newTracks.filter(t => !existingTracks.some(e => sameTrack(e, t)));
+      if (missing.length === 0) {
+        setMetadataCache(existingTracks);
+        log.info('Track metadata saved to R2', { total: existingTracks.length, new: newTracks.length, attempts: attempt });
+        return;
+      }
 
-    const allTracks = [...existingTracks, ...uniqueNewTracks];
+      try {
+        await putJsonToR2(METADATA_R2_KEY, [...existingTracks, ...missing], { ifMatch: etag || undefined });
+      } catch (error) {
+        if (!isPreconditionFailed(error)) throw error;
+        log.warn('Track metadata changed while saving; retrying', { attempt });
+      }
 
-    // Save to R2
-    await putJsonToR2(METADATA_R2_KEY, allTracks);
-
-    setMetadataCache(allTracks);
-
-    log.info(`Track metadata saved to R2`, { total: allTracks.length, new: uniqueNewTracks.length });
+      // Loop round: the next read confirms the tracks are in, or tries again.
+      await new Promise(resolve => setTimeout(resolve, 150 + Math.random() * 500 * attempt));
+    }
+    throw new Error('Could not save track metadata: the library kept changing');
   } catch (error) {
     log.error('Failed to save track metadata to R2', { error: error.message });
     throw error;
