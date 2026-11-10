@@ -28,6 +28,84 @@ const state = {
 };
 
 // ============================================
+// Access key
+// ============================================
+// Generating and saving tracks costs credits, so the server asks for an access
+// key on those requests. The key is typed once and kept on this device. A link
+// ending in #key=... stores it too, which is the easy way to set up a phone.
+const ACCESS_KEY_STORAGE = 'ragaAccessKey';
+
+function getAccessKey() {
+  try { return localStorage.getItem(ACCESS_KEY_STORAGE) || ''; } catch { return ''; }
+}
+
+function setAccessKey(key) {
+  try {
+    if (key) localStorage.setItem(ACCESS_KEY_STORAGE, key);
+    else localStorage.removeItem(ACCESS_KEY_STORAGE);
+  } catch { /* storage unavailable: the key lasts for this request only */ }
+}
+
+(function readAccessKeyFromLink() {
+  const match = window.location.hash.match(/[#&]key=([^&]+)/);
+  if (!match) return;
+  setAccessKey(decodeURIComponent(match[1]));
+  window.history.replaceState(null, '', window.location.pathname + window.location.search);
+})();
+
+function askForAccessKey(message) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,0.6)';
+    overlay.innerHTML = `
+      <form style="width:100%;max-width:340px;background:#1b1826;color:#f4efe6;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:20px;font:inherit">
+        <h2 style="margin:0 0 8px;font-size:18px">Access key</h2>
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.4;opacity:0.8"></p>
+        <input type="password" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Access key"
+          style="width:100%;box-sizing:border-box;padding:12px;font-size:16px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:#0f0d17;color:inherit">
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button type="button" data-cancel style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:inherit;font-size:15px">Cancel</button>
+          <button type="submit" style="flex:1;padding:12px;border-radius:10px;border:0;background:#e0a84f;color:#1b1826;font-size:15px;font-weight:600">Save</button>
+        </div>
+      </form>`;
+    overlay.querySelector('p').textContent = message;
+    const input = overlay.querySelector('input');
+    const finish = (value) => { overlay.remove(); resolve(value); };
+    overlay.querySelector('form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      finish(input.value.trim() || null);
+    });
+    overlay.querySelector('[data-cancel]').addEventListener('click', () => finish(null));
+    document.body.appendChild(overlay);
+    input.focus();
+  });
+}
+
+/**
+ * fetch() for requests that need the access key. Sends the stored key; if the
+ * server answers 401, asks for the key once and repeats the request.
+ */
+async function fetchWithKey(url, options = {}) {
+  const send = () => {
+    const key = getAccessKey();
+    const headers = { ...(options.headers || {}) };
+    if (key) headers['X-Raga-Key'] = key;
+    return fetch(url, { ...options, headers });
+  };
+  let response = await send();
+  if (response.status !== 401) return response;
+
+  const key = await askForAccessKey(getAccessKey()
+    ? 'That access key was not accepted. Enter it again.'
+    : 'Enter your access key to generate tracks.');
+  if (!key) return response;
+  setAccessKey(key);
+  return send();
+}
+
+// ============================================
 // DOM Cache
 // ============================================
 const $ = (id) => document.getElementById(id);
@@ -1302,7 +1380,7 @@ async function runGenerationPipeline(raga, mode, genMode, genContext, params) {
 
     updateBanner(`Generating ${raga.name}`, steps[0].text);
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithKey(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -1375,7 +1453,7 @@ async function pollGenerationStatus(taskId, genMode, genContext) {
 async function downloadTrack(taskId, genContext) {
   const raga = genContext.raga;
   try {
-    const response = await fetch(`/api/download/${taskId}`, {
+    const response = await fetchWithKey(`/api/download/${taskId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
