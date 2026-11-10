@@ -1,5 +1,4 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { requireApiKey } from '@/src/utils/apiKey.js';
 import { config } from 'dotenv';
 config();
 
@@ -9,9 +8,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ taskId: string }> }
 ) {
-  const denied = requireApiKey(request);
-  if (denied) return denied;
-
   const { taskId } = await params;
 
   try {

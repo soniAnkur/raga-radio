@@ -2,9 +2,8 @@
  * Remote MCP endpoint (Streamable HTTP): the raga engine's tools plus the
  * app's track tools, at /api/mcp.
  *
- * Stateless: each request gets a fresh server. Tools that spend Suno credits
- * or save anything need the access key (RAGA_API_KEY) in an X-Raga-Key
- * header or as Authorization: Bearer. Everything else is open.
+ * Stateless: each request gets a fresh server. There is no access control:
+ * every tool is open, including the ones that spend Suno credits.
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
@@ -19,7 +18,7 @@ export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  const ctx = appContext(request);
+  const ctx = appContext();
   const server = new McpServer({ name: 'raga-radio', version: '0.2.0' });
   registerEngineTools(server, ctx);
   registerAppTools(server, ctx);

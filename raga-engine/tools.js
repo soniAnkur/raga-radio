@@ -9,7 +9,6 @@
  *   resolveGenre(nameOrId)         -> { name, sunoTags, production } | null   optional
  *   styleStore                     -> { list(), save(style) } | null
  *   remote                         -> true when callers are not on this machine (no file paths)
- *   access()                       -> { ok: true } | { ok: false, reason }   gate for tools that spend or write
  *   suno()                         -> a client from createSunoClient
  */
 import { readFile, writeFile } from 'node:fs/promises';
@@ -39,12 +38,6 @@ export const reply = (data) => ({ content: [{ type: 'text', text: typeof data ==
 export const guard = (fn) => async (args) => {
   try { return reply(await fn(args)); } catch (e) { return { ...reply(`Error: ${e.message}`), isError: true }; }
 };
-
-/** Throws unless the caller may use tools that spend credits or change stored data */
-export function requireAccess(ctx) {
-  const access = ctx.access ? ctx.access() : { ok: true };
-  if (!access.ok) throw new Error(access.reason);
-}
 
 const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?|.*\.internal$|.*\.local$)/i;
 
@@ -235,7 +228,6 @@ export function registerEngineTools(server, ctx) {
       + 'Artist names go only in inspiredBy: they are never sent to Suno, which rejects prompts that name artists.',
     inputSchema: { ...styleShape, name: z.string().describe('Short name, such as "Flamenco lead guitar"') },
   }, guard(async (args) => {
-    requireAccess(ctx);
     if (!ctx.styleStore) throw new Error('This server has nowhere to save styles.');
     const style = defineStyle(args, await availableStyles(ctx));
     await ctx.styleStore.save(style);
@@ -304,7 +296,6 @@ export function registerEngineTools(server, ctx) {
   const suno = () => (ctx.suno ? ctx.suno() : createSunoClient());
   const sunoTool = (kind) => guard(async ({ dryRun, ...options }) => {
     if (dryRun) return createSunoClient({ apiKey: 'dry-run' }).buildRequest(kind, options);
-    requireAccess(ctx);
     return suno()[kind](options);
   });
 
@@ -332,28 +323,4 @@ export function registerEngineTools(server, ctx) {
   }));
 
   return server;
-}
-
-/**
- * Access rule for servers reached over the network: tools that spend credits
- * or change stored data need the access key. Without a configured key those
- * tools are off, so a public server cannot be used to spend someone's credits.
- */
-export function keyAccess(expectedKey, givenKey) {
-  return () => {
-    if (!expectedKey) {
-      return { ok: false, reason: 'This tool is switched off because the server has no access key. The owner must set RAGA_API_KEY on the server; then send it in an X-Raga-Key header.' };
-    }
-    if (!givenKey) return { ok: false, reason: 'This tool needs the access key. Send it in an X-Raga-Key header (or Authorization: Bearer).' };
-    if (givenKey !== expectedKey) return { ok: false, reason: 'The access key is not valid.' };
-    return { ok: true };
-  };
-}
-
-/** The key a request carries, from X-Raga-Key or Authorization: Bearer */
-export function keyFromHeaders(get) {
-  const direct = get('x-raga-key');
-  if (direct) return String(direct).trim();
-  const auth = String(get('authorization') || '');
-  return auth.toLowerCase().startsWith('bearer ') ? auth.slice(7).trim() : '';
 }

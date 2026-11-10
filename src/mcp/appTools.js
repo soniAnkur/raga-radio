@@ -1,12 +1,12 @@
 /**
  * MCP tools that belong to the Raga Radio app, not to the engine: making a
  * whole track (guide melody -> R2 -> Suno) and saving it to the library.
- * They use the app's storage and Suno account, so they need the access key.
+ * They use the app's storage and Suno account.
  */
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { composeReference, pitchToSwara, BUILT_IN_STYLES } from '../../raga-engine/index.js';
-import { guard, requireAccess, promptFor, ragaShape, styleShape } from '../../raga-engine/tools.js';
+import { guard, promptFor, ragaShape, styleShape } from '../../raga-engine/tools.js';
 import { checkApiKey, generateFromUpload, getTaskStatus, downloadTracks } from '../services/sunoApi.js';
 import { uploadBufferToR2, isR2Configured } from '../services/cloudflare-r2.js';
 import { buildMidi } from '../generators/midiBuilder.js';
@@ -37,7 +37,6 @@ export function registerAppTools(server, ctx) {
       weirdnessConstraint: z.number().min(0).max(1).optional().describe('How far Suno may wander (default 0.2)'),
     },
   }, guard(async (args) => {
-    requireAccess(ctx);
     const { raga, id } = await ctx.resolveRaga(args);
     const genre = args.genre || 'indianClassical';
     const instrumentIds = args.instruments || (await ctx.resolveGenre(genre))?.defaultInstruments || ['sitar', 'tabla'];
@@ -124,7 +123,6 @@ export function registerAppTools(server, ctx) {
       midi_file: z.string().optional(),
     },
   }, guard(async (args) => {
-    requireAccess(ctx);
     checkApiKey();
     const record = await getTaskStatus(args.task_id);
     if (!String(record.status || '').toUpperCase().includes('SUCCESS')) {

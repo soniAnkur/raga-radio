@@ -1,15 +1,14 @@
 /**
  * What the engine's MCP tools need to know about this app: its ragas, its
- * genres, where styles are stored and who may spend credits.
+ * genres and where styles are stored.
  */
 import ragas from '../data/ragas.js';
 import { genres } from '../data/genres.js';
-import { keyAccess, keyFromHeaders } from '../../raga-engine/tools.js';
 import { r2StyleStore } from './styleStore.js';
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-export function appContext(request) {
+export function appContext() {
   return {
     remote: true,
     async resolveRaga({ raga, ragaId }) {
@@ -27,6 +26,5 @@ export function appContext(request) {
       return Object.values(genres).find((g) => norm(g.id) === wanted || norm(g.name) === wanted || norm(g.name).startsWith(wanted)) || null;
     },
     styleStore: r2StyleStore,
-    access: keyAccess(process.env.RAGA_API_KEY?.trim(), keyFromHeaders((name) => request.headers.get(name))),
   };
 }

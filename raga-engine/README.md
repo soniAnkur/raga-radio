@@ -32,7 +32,7 @@ text.prompt; text.style; text.negativeTags;
 
 ## MCP tools
 
-| Tool | What it does | Needs the access key on a remote server |
+| Tool | What it does | Spends Suno credits |
 |---|---|---|
 | `list_ragas` | Ragas with their time of day and moods (when raga data is configured) | No |
 | `raga_rules` | Notes, forbidden notes, allowed moves, phrases | No |
@@ -42,7 +42,7 @@ text.prompt; text.style; text.negativeTags;
 | `research_artist` | What is written about how an artist plays | No |
 | `build_prompt` | The Suno prompt from raga, genre, instruments, styles and artists | No |
 | `list_styles` | Starter styles plus saved ones | No |
-| `define_style` | Save a style for reuse | Yes |
+| `define_style` | Save a style for reuse | No |
 | `suno_cover`, `suno_add_instrumental`, `suno_generate` | Suno calls with every option; `dryRun: true` is free | Yes, unless `dryRun` |
 | `suno_status` | Check a Suno task | No |
 
@@ -80,7 +80,7 @@ cd raga-engine && npm install
 **Remote (HTTP), standalone**, on any Node host:
 
 ```bash
-PORT=8787 RAGA_API_KEY=choose-a-key SUNO_API_KEY=... node raga-engine/http-server.js
+PORT=8787 SUNO_API_KEY=... node raga-engine/http-server.js
 # MCP endpoint: http://localhost:8787/mcp
 ```
 
@@ -89,19 +89,17 @@ PORT=8787 RAGA_API_KEY=choose-a-key SUNO_API_KEY=... node raga-engine/http-serve
 Connect Claude Code to a remote server:
 
 ```bash
-claude mcp add --transport http raga-radio https://ragaradio.vercel.app/api/mcp \
-  --header "X-Raga-Key: your-access-key"
+claude mcp add --transport http raga-radio https://ragaradio.vercel.app/api/mcp
 claude mcp list    # should show the server as connected
 ```
 
-The header is only needed for tools that spend credits or save styles. A remote server with no `RAGA_API_KEY` set keeps those tools switched off.
+The remote servers have no access control: anyone who can reach the address can use every tool, including the ones that spend Suno credits.
 
 Environment:
 
 | Variable | Used for |
 |---|---|
 | `SUNO_API_KEY`, `SUNO_API_BASE_URL` | Suno tools |
-| `RAGA_API_KEY` | Access key for remote servers |
 | `RAGA_DATA_MODULE` | Path to a module whose default export maps id to raga; enables `ragaId` and `list_ragas` |
 | `RAGA_STYLES_FILE` | Where the local and standalone servers save styles (default `~/.raga-engine/styles.json`) |
 | `PORT` | Standalone HTTP server port (default 8787) |

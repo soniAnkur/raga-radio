@@ -2,20 +2,20 @@
 /**
  * Standalone remote MCP server for the raga engine (Streamable HTTP).
  *
- *   PORT=8787 RAGA_API_KEY=... SUNO_API_KEY=... node raga-engine/http-server.js
+ *   PORT=8787 SUNO_API_KEY=... node raga-engine/http-server.js
  *   MCP endpoint: http://localhost:8787/mcp
  *
  * Stateless: every request gets a fresh server, so it runs on any host,
- * including serverless ones. Tools that spend Suno credits or save styles
- * need the access key in an X-Raga-Key header (or Authorization: Bearer);
- * with no RAGA_API_KEY set on the server those tools are switched off.
+ * including serverless ones. There is no access control: anyone who can
+ * reach the server can use every tool, including the ones that spend Suno
+ * credits. Put it behind your own network or proxy if that matters.
  *
- * Env: as mcp-server.js, plus PORT and RAGA_API_KEY.
+ * Env: as mcp-server.js, plus PORT.
  */
 import { createServer } from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { registerEngineTools, keyAccess, keyFromHeaders } from './tools.js';
+import { registerEngineTools } from './tools.js';
 import { localContext } from './context.js';
 
 const PORT = Number(process.env.PORT) || 8787;
@@ -39,10 +39,7 @@ createServer(async (req, res) => {
     const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || 'null');
 
     const server = new McpServer({ name: 'raga-engine', version: '0.2.0' });
-    registerEngineTools(server, {
-      ...base,
-      access: keyAccess(process.env.RAGA_API_KEY, keyFromHeaders((name) => req.headers[name])),
-    });
+    registerEngineTools(server, base);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     res.on('close', () => { transport.close(); server.close(); });
     await server.connect(transport);
