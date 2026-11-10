@@ -103,6 +103,9 @@ Selected: ${instrumentNames}
 Descriptions:
 ${instrumentDescs}
 
+${leadInstrument(instrumentIds) ? `=== LEAD STYLE (must be described in the prompt) ===
+${leadInstrument(instrumentIds).leadStyle}
+` : ''}
 === REQUIREMENTS ===
 1. Create a prompt that blends the raga's essence with the genre's sound
 2. Mention specific instruments and their roles
@@ -153,16 +156,57 @@ function validateAndFixPrompt(result) {
  */
 function generateFallbackPrompt(raga, genreId, instrumentIds) {
   const genreData = getGenreById(genreId);
-  const instrumentNames = instrumentIds
-    .map(id => getInstrumentById(id)?.name)
-    .filter(Boolean)
-    .join(', ');
+  const chosen = instrumentIds.map(id => getInstrumentById(id)).filter(Boolean);
+  const instrumentNames = chosen.map(i => i.name).join(', ');
+  const lead = leadInstrument(instrumentIds);
 
-  return {
-    prompt: `${genreData.name} interpretation of Raga ${raga.name}. ${raga.mood?.join(' and ') || 'Peaceful'} atmosphere with ${instrumentNames}. ${genreData.production || 'High quality production'}`,
+  const prompt = [
+    `${genreData.name} interpretation of Raga ${raga.name}.`,
+    `${raga.mood?.join(' and ') || 'Peaceful'} atmosphere with ${instrumentNames}.`,
+    lead ? lead.leadStyle : '',
+    `${genreData.production || 'High quality production'}.`,
+  ].filter(Boolean).join(' ');
+
+  return applyLeadStyle({
+    prompt: prompt.slice(0, 1000),
     style: genreData.sunoTags.slice(0, 6).join(', '),
     negativeTags: 'vocals, singing, harsh noise, off-key'
-  };
+  }, instrumentIds);
+}
+
+/**
+ * The chosen instrument that defines how the lead is played, if any
+ * (an instrument with a `leadStyle`, such as carnatic_guitar).
+ */
+function leadInstrument(instrumentIds) {
+  return instrumentIds.map(id => getInstrumentById(id)).find(i => i?.leadStyle) || null;
+}
+
+/**
+ * Put a lead instrument's style tags first in the style field and keep its
+ * look-alike sounds out. Applied to AI-written and fallback prompts alike,
+ * so the lead style does not depend on which one produced the text.
+ */
+function applyLeadStyle(result, instrumentIds) {
+  const lead = leadInstrument(instrumentIds);
+  if (!lead) return result;
+
+  const tags = [...(lead.styleTags || []), ...String(result.style || '').split(',').map(t => t.trim()).filter(Boolean)];
+  const seen = new Set();
+  let style = '';
+  for (const tag of tags) {
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    const next = style ? `${style}, ${tag}` : tag;
+    if (next.length > 200) break;
+    seen.add(key);
+    style = next;
+  }
+
+  const avoid = [...String(result.negativeTags || '').split(',').map(t => t.trim()).filter(Boolean), ...(lead.avoid || [])];
+  const negativeTags = [...new Set(avoid)].join(', ').slice(0, 200);
+
+  return { ...result, style, negativeTags };
 }
 
 /**
@@ -220,7 +264,7 @@ export async function generateSunoPrompt(raga, genreId, instrumentIds, options =
     }
 
     // Validate and fix
-    result = validateAndFixPrompt(result);
+    result = applyLeadStyle(validateAndFixPrompt(result), instrumentIds);
 
     log.info('AI Suno prompt generated', {
       promptLength: result.prompt?.length,

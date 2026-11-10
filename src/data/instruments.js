@@ -113,6 +113,26 @@ export const instruments = {
   // ============ Western/Modern Instruments ============
 
   // Electric
+  // Carnatic-style lead guitar: the electric guitar played the way a veena or
+  // a voice carries a raga. The melody is sung on one sustained string voice,
+  // notes are joined by slides and bends instead of being picked one by one,
+  // and important notes are shaken (gamaka) rather than held still.
+  carnatic_guitar: {
+    id: 'carnatic_guitar',
+    name: 'Carnatic Guitar',
+    category: 'western_electric',
+    sunoDesc: 'Carnatic-style electric lead guitar with a singing sustained tone, wide gamaka bends, long slides between notes, veena-like phrasing and fluid legato runs',
+    // Short tags that go first in the Suno style field when this instrument leads
+    styleTags: ['Carnatic electric guitar lead', 'Indian progressive metal'],
+    // What the lead should do, in a sentence, for the prompt text
+    leadStyle: 'A single Carnatic-style electric guitar carries the raga melody like a voice: soaring sustained notes, gamaka bends and oscillations on the important notes, long slides into each phrase, fast legato runs between resting notes, and a lyrical melodic solo that builds to a climax. Heavy palm-muted riffs answer the lead and never play over it.',
+    // Sounds Suno tends to swap in when it reads "Carnatic"
+    avoid: ['sitar', 'veena', 'violin', 'atonal shredding'],
+    // How much more ornament the guide melody gets (1 = normal)
+    ornamentAmount: 1.6,
+    gmProgram: 29, // Overdriven Guitar
+    role: 'melodic'
+  },
   electric_guitar: {
     id: 'electric_guitar',
     name: 'Electric Guitar',

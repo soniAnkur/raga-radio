@@ -9,6 +9,7 @@ import { checkApiKey, generateFromUpload } from '@/src/services/sunoApi.js';
 import { getRaga } from '@/src/data/ragas.js';
 import { buildCoverPrompt, buildAICoverPrompt, isAIPromptAvailable } from '@/src/services/promptBuilder.js';
 import { suggestGenres, getGenreById } from '@/src/data/genres.js';
+import { getInstrumentById } from '@/src/data/instruments.js';
 import { AlapGenerator } from '@/src/generators/alapGenerator.js';
 import { AIMelodyGenerator, isAIConfigured } from '@/src/services/aiMelodyGenerator.js';
 import { buildMidi } from '@/src/generators/midiBuilder.js';
@@ -59,6 +60,8 @@ export async function POST(
 
   const instrumentList = Array.isArray(rawInstruments) ? rawInstruments : [rawInstruments];
   const drone = droneOption ?? instrumentList.includes('tanpura');
+  // Some lead instruments ask for a more ornamented guide melody (e.g. Carnatic guitar)
+  const ornamentAmount = Math.max(1, ...instrumentList.map((i: string) => getInstrumentById(i)?.ornamentAmount || 1));
 
   try {
     checkApiKey();
@@ -116,6 +119,7 @@ export async function POST(
           tonic,
           seed: seed ?? undefined,
           drone,
+          ornamentAmount,
         });
         generatorType = 'Phrase engine';
         wavBuffer = composed.wav;

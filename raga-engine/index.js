@@ -19,13 +19,13 @@ import { withPhrases } from './phrases.js';
  * either valid or the call throws.
  */
 export function composeReference(raga, options = {}) {
-  const { id, duration = 160, tonic = 'C', seed = Date.now() % 2147483647, drone = true, render = true } = options;
+  const { id, duration = 160, tonic = 'C', seed = Date.now() % 2147483647, drone = true, render = true, ornamentAmount = 1 } = options;
   const grammar = buildGrammar(withPhrases(raga, id));
   let lastReport;
   for (let attempt = 0; attempt < 6; attempt++) {
     const s = seed + attempt * 101;
     const melody = generateMelody(grammar, { duration, seed: s });
-    addOrnaments(melody.events, grammar, { seed: s });
+    addOrnaments(melody.events, grammar, { seed: s, amount: ornamentAmount });
     lastReport = validateMelody(melody.events, grammar);
     if (!lastReport.valid) continue;
     const audio = render ? renderReference(melody.events, grammar, { tonic, drone }) : null;
