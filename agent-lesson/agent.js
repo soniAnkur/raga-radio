@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Raga agent, chapter 2: one tool, one call.
+// Raga agent, chapter 3: the loop.
 //
 // Run:  ANTHROPIC_API_KEY=... node agent.js
 // Needs Node 18 or newer. No packages to install.
@@ -18,7 +18,8 @@ const RAGA_API = process.env.RAGA_API_URL || 'https://ragaradio.vercel.app';
 
 const SYSTEM = `You are a music assistant for Raga Radio, an app that makes tracks
 based on Indian classical ragas. Keep answers short.
-Use your tools for facts about ragas instead of answering from memory.`;
+Use your tools for facts about ragas and styles instead of answering from memory.
+When someone asks what to listen to, suggest one raga and one style with instruments, and say why.`;
 
 // ---- tools ----
 // A tool has two halves. This half is for the model: a name, a description
@@ -44,6 +45,13 @@ const tools = [
       required: ['time_of_day'],
     },
   },
+  {
+    name: 'list_styles',
+    description:
+      'List the musical styles Raga Radio can produce a raga in (for example lo-fi, metal, orchestral), ' +
+      'each with the instruments it supports and the moods it suits. Call this before choosing a style or instruments.',
+    input_schema: { type: 'object', properties: {} },
+  },
 ];
 
 // This half is for us: ordinary code that does the work. The model never
@@ -58,6 +66,18 @@ const handlers = {
       .sort((a, b) => (wanted ? hasMood(b) - hasMood(a) : 0))
       .slice(0, 5)
       .map((raga) => ({ id: raga.id, name: raga.name, time: raga.time, mood: raga.mood }));
+  },
+
+  async list_styles() {
+    const { genres } = await (await fetch(`${RAGA_API}/api/genres`)).json();
+    return genres.map((g) => ({
+      id: g.id,
+      name: g.name,
+      description: g.description,
+      suits_moods: g.moodMapping,
+      default_instruments: g.defaultInstruments,
+      instruments: g.instruments,
+    }));
   },
 };
 
@@ -83,6 +103,40 @@ async function callModel() {
 // A reply is a list of blocks: text, and now possibly tool requests.
 const textOf = (reply) => reply.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
 
+// ---- the agent loop ----
+// One turn of conversation can take many trips to the model:
+//   ask the model -> it requests tools -> run them -> send results -> ask again
+// and so on, until it stops requesting tools and answers. The model decides
+// how many trips and which tools. This loop is what makes it an agent.
+const MAX_STEPS = 8; // a ceiling, so a confused model cannot loop forever
+
+async function runTurn() {
+  for (let step = 1; step <= MAX_STEPS; step++) {
+    const reply = await callModel();
+    messages.push({ role: 'assistant', content: reply.content });
+
+    // No tool requested: this is the answer, and the turn is over.
+    if (reply.stop_reason !== 'tool_use') return textOf(reply);
+
+    // The model may ask for several tools at once. Answer every request.
+    const results = [];
+    for (const call of reply.content.filter((b) => b.type === 'tool_use')) {
+      console.log(`  step ${step}  model asks:  ${call.name}(${JSON.stringify(call.input)})`);
+      const result = await handlers[call.name](call.input);
+      console.log(`  step ${step}  we return:   ${preview(result)}`);
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: JSON.stringify(result) });
+    }
+    messages.push({ role: 'user', content: results });
+  }
+  return `I stopped after ${MAX_STEPS} steps without finishing.`;
+}
+
+// Tool results can be long. Print the start; the model still gets all of it.
+const preview = (value) => {
+  const text = JSON.stringify(value);
+  return text.length > 160 ? `${text.slice(0, 160)}... (${text.length} characters)` : text;
+};
+
 // ---- terminal chat ----
 const rl = readline.createInterface({ input: process.stdin });
 const lines = rl[Symbol.asyncIterator]();
@@ -92,39 +146,13 @@ async function ask(prompt) {
   return done ? null : value.trim();
 }
 
-console.log('Raga agent, chapter 2. Type a message, or "exit" to quit.\n');
+console.log('Raga agent, chapter 3. Type a message, or "exit" to quit.\n');
 while (true) {
   const input = await ask('you > ');
   if (input === null || input === 'exit') break;
   if (!input) continue;
 
   messages.push({ role: 'user', content: input });
-  let reply = await callModel();
-  messages.push({ role: 'assistant', content: reply.content });
-
-  // stop_reason says why the model stopped writing. "tool_use" means it has
-  // not answered yet: it is waiting for us to run something.
-  if (reply.stop_reason === 'tool_use') {
-    const results = [];
-    for (const call of reply.content.filter((b) => b.type === 'tool_use')) {
-      console.log(`  model asks:  ${call.name}(${JSON.stringify(call.input)})`);
-      const result = await handlers[call.name](call.input);
-      console.log(`  we return:   ${JSON.stringify(result)}`);
-      // The id ties each result to the request it answers.
-      results.push({ type: 'tool_result', tool_use_id: call.id, content: JSON.stringify(result) });
-    }
-    // Results go back as a user message. Then we ask the model again.
-    messages.push({ role: 'user', content: results });
-    reply = await callModel();
-    messages.push({ role: 'assistant', content: reply.content });
-
-    if (reply.stop_reason === 'tool_use') {
-      // It wants a second round. This chapter only does one, so drop the
-      // unanswered request to keep the history valid. Chapter 3 fixes this.
-      messages.pop();
-      console.log('  (the model wants another tool call; chapter 3 adds the loop)');
-    }
-  }
-  console.log(`\nagent > ${textOf(reply)}\n`);
+  console.log(`\nagent > ${await runTurn()}\n`);
 }
 rl.close();

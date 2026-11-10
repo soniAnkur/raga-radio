@@ -61,3 +61,13 @@ Try:
 - Change the tool's description to something vague and ask again. The description is the only thing the model knows about the tool.
 
 Notice: the model never runs anything. It writes a request and stops (`stop_reason` is `tool_use`). Our code runs the tool and sends the result back, and only then does the model answer.
+
+## Chapter 3: the loop
+
+Chapter 2 handled exactly one round of tool calls. Now `runTurn` keeps going: ask the model, run the tools it requests, send the results, ask again, until the model answers without requesting a tool. A second tool, `list_styles`, gives it something to chain.
+
+Try:
+- `I want something for a morning workout. What should it sound like?` It looks up ragas, looks up styles, then recommends. The step numbers show each trip to the model.
+- `Compare what you would play at dawn and late at night.` It may call `pick_raga` twice in one step.
+
+Notice: nobody wrote "first look up ragas, then styles". The model chose the order and the number of steps. That choice, repeated in a loop, is what "agent" means. `MAX_STEPS` is the brake.
