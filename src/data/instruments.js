@@ -133,6 +133,36 @@ export const instruments = {
     gmProgram: 29, // Overdriven Guitar
     role: 'melodic'
   },
+  // Neoclassical lead guitar: violin-like virtuoso playing. Very fast picked
+  // and swept runs, wide dramatic vibrato on held notes, long climbing
+  // sequences. The runs use the raga's notes, taken from the guide melody.
+  neoclassical_guitar: {
+    id: 'neoclassical_guitar',
+    name: 'Neoclassical Guitar',
+    category: 'western_electric',
+    sunoDesc: 'neoclassical virtuoso electric lead guitar with violin-like tone, blazing fast picked runs, sweep-picked arpeggios and wide dramatic vibrato',
+    styleTags: ['Neoclassical metal', 'Virtuoso shred guitar lead'],
+    leadStyle: 'A neoclassical virtuoso electric guitar carries the raga melody: a violin-like singing tone, wide dramatic vibrato on every held note, blazing fast picked runs and sweep-picked arpeggios climbing through the scale in sequences, and a grand baroque-style solo with a harpsichord-like urgency. Galloping riffs and double-kick drums drive underneath.',
+    avoid: ['sitar', 'synth lead', 'sloppy playing'],
+    ornamentAmount: 1.2,
+    gmProgram: 30,
+    role: 'melodic'
+  },
+  // Modern progressive lead guitar: clean and precise instead of distorted.
+  // Melodies are tapped and hybrid-picked into bright, catchy hooks with
+  // harmonics and slides, over tight syncopated grooves.
+  prog_guitar: {
+    id: 'prog_guitar',
+    name: 'Modern Prog Guitar',
+    category: 'western_electric',
+    sunoDesc: 'clean modern progressive lead guitar with two-hand tapping, hybrid-picked melodic hooks, harmonics, quick slides and percussive muted notes',
+    styleTags: ['Modern instrumental progressive', 'Clean tapped guitar lead', 'Math rock'],
+    leadStyle: 'A clean, glassy modern progressive guitar carries the raga melody as bright catchy hooks: two-hand tapping, hybrid-picked lines, natural harmonics, quick slides and percussive muted notes, played with tight precision. Syncopated drums with crisp hi-hat rolls and deep sub bass sit underneath, with sudden stops and a heavy low-tuned riff for contrast.',
+    avoid: ['sitar', 'muddy distortion', 'screaming leads'],
+    ornamentAmount: 1,
+    gmProgram: 27, // Clean Guitar
+    role: 'melodic'
+  },
   electric_guitar: {
     id: 'electric_guitar',
     name: 'Electric Guitar',
