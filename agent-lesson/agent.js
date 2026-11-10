@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Raga agent, chapter 3: the loop.
+// Raga agent, chapter 4: tools that act.
 //
-// Run:  ANTHROPIC_API_KEY=... node agent.js
+// Run:  ANTHROPIC_API_KEY=... RAGA_API_KEY=... node agent.js
 // Needs Node 18 or newer. No packages to install.
 
 import readline from 'node:readline';
@@ -13,13 +13,25 @@ if (!ANTHROPIC_API_KEY) {
   process.exit(1);
 }
 
-// Raga Radio's public API. Reading from it needs no key.
+// Raga Radio's API. Reading from it needs no key. Making a track spends
+// Suno credits, so those requests carry an access key from the app's owner.
 const RAGA_API = process.env.RAGA_API_URL || 'https://ragaradio.vercel.app';
+const RAGA_API_KEY = process.env.RAGA_API_KEY;
+
+async function ragaApi(path, { method = 'GET', body } = {}) {
+  const headers = { 'content-type': 'application/json' };
+  if (RAGA_API_KEY) headers['x-raga-key'] = RAGA_API_KEY;
+  const response = await fetch(`${RAGA_API}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const data = await response.json();
+  if (!response.ok || data.success === false) throw new Error(data.error || `Raga Radio returned ${response.status}`);
+  return data;
+}
 
 const SYSTEM = `You are a music assistant for Raga Radio, an app that makes tracks
 based on Indian classical ragas. Keep answers short.
 Use your tools for facts about ragas and styles instead of answering from memory.
-When someone asks what to listen to, suggest one raga and one style with instruments, and say why.`;
+When someone asks for a track: pick a raga for the time of day, choose a style and
+instruments that fit what they asked for, then start the song. Say what you chose and why.`;
 
 // ---- tools ----
 // A tool has two halves. This half is for the model: a name, a description
@@ -52,7 +64,31 @@ const tools = [
       'each with the instruments it supports and the moods it suits. Call this before choosing a style or instruments.',
     input_schema: { type: 'object', properties: {} },
   },
+  {
+    name: 'start_song',
+    description:
+      'Start making a track. Raga Radio composes a guide melody that follows the raga, and Suno performs it ' +
+      'in the chosen style. This spends credits and takes a few minutes. Returns a task_id straight away; ' +
+      'the audio is not ready yet. Use ids from pick_raga and list_styles, never invented ones.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        raga_id: { type: 'string', description: 'A raga id from pick_raga, such as "yaman"' },
+        style_id: { type: 'string', description: 'A style id from list_styles, such as "lofi"' },
+        instruments: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Instrument ids from that style in list_styles. Two to four work best.',
+        },
+      },
+      required: ['raga_id', 'style_id', 'instruments'],
+    },
+  },
 ];
+
+// Tools that only read are safe to run whenever the model asks. Tools that
+// spend money or change something wait for a person to say yes.
+const NEEDS_APPROVAL = new Set(['start_song']);
 
 // This half is for us: ordinary code that does the work. The model never
 // runs it. The model can only ask, and we decide whether and how to run it.
@@ -78,6 +114,21 @@ const handlers = {
       default_instruments: g.defaultInstruments,
       instruments: g.instruments,
     }));
+  },
+
+  async start_song({ raga_id, style_id, instruments }) {
+    const data = await ragaApi(`/api/generate/${raga_id}/authentic`, {
+      method: 'POST',
+      body: { genre: style_id, instruments },
+    });
+    return {
+      task_id: data.taskId,
+      raga: data.raga,
+      key: data.melody.tonic,
+      guide_melody: { seconds: Math.round(Number(data.melody.duration)), notes: data.melody.noteCount, ornaments: data.melody.ornaments },
+      reference_audio: data.referenceAudio,
+      midi_file: data.midiFile,
+    };
   },
 };
 
@@ -122,7 +173,13 @@ async function runTurn() {
     const results = [];
     for (const call of reply.content.filter((b) => b.type === 'tool_use')) {
       console.log(`  step ${step}  model asks:  ${call.name}(${JSON.stringify(call.input)})`);
-      const result = await handlers[call.name](call.input);
+      let result;
+      if (NEEDS_APPROVAL.has(call.name) && (await ask('              this spends credits. Run it? (y/n) ')) !== 'y') {
+        // Saying no is a result too. The model reads it and carries on.
+        result = { declined: 'The person said no. Do not try again; ask what they would like instead.' };
+      } else {
+        result = await handlers[call.name](call.input);
+      }
       console.log(`  step ${step}  we return:   ${preview(result)}`);
       results.push({ type: 'tool_result', tool_use_id: call.id, content: JSON.stringify(result) });
     }
@@ -146,7 +203,7 @@ async function ask(prompt) {
   return done ? null : value.trim();
 }
 
-console.log('Raga agent, chapter 3. Type a message, or "exit" to quit.\n');
+console.log('Raga agent, chapter 4. Type a message, or "exit" to quit.\n');
 while (true) {
   const input = await ask('you > ');
   if (input === null || input === 'exit') break;

@@ -71,3 +71,15 @@ Try:
 - `Compare what you would play at dawn and late at night.` It may call `pick_raga` twice in one step.
 
 Notice: nobody wrote "first look up ragas, then styles". The model chose the order and the number of steps. That choice, repeated in a loop, is what "agent" means. `MAX_STEPS` is the brake.
+
+## Chapter 4: tools that act
+
+`start_song` does something in the world: it asks Raga Radio to compose a guide melody and has Suno perform it. That spends credits, so the code asks you before running it.
+
+You need `RAGA_API_KEY` from here on.
+
+Try:
+- `Make me a calm evening track with piano.` Answer `n` at the prompt. The refusal goes back to the model as a result, and it carries on politely.
+- Ask again and answer `y`. You get a task id, the key and a summary of the guide melody. The audio is not ready yet; that is chapter 5.
+
+Notice: tools that read can run freely. Tools that spend or change things need a gate, and the gate lives in our code, not in the model's good intentions. If Raga Radio refuses the request, this chapter crashes. Chapter 6 deals with that.
