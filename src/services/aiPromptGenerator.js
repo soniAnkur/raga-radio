@@ -103,8 +103,8 @@ Selected: ${instrumentNames}
 Descriptions:
 ${instrumentDescs}
 
-${leadInstrument(instrumentIds) ? `=== LEAD STYLE (must be described in the prompt) ===
-${leadInstrument(instrumentIds).leadStyle}
+${styledInstruments(instrumentIds).length ? `=== PLAYING STYLE (must be described in the prompt) ===
+${styledInstruments(instrumentIds).map(i => i.playingStyle).join('\n')}
 ` : ''}
 === REQUIREMENTS ===
 1. Create a prompt that blends the raga's essence with the genre's sound
@@ -158,52 +158,60 @@ function generateFallbackPrompt(raga, genreId, instrumentIds) {
   const genreData = getGenreById(genreId);
   const chosen = instrumentIds.map(id => getInstrumentById(id)).filter(Boolean);
   const instrumentNames = chosen.map(i => i.name).join(', ');
-  const lead = leadInstrument(instrumentIds);
 
   const prompt = [
     `${genreData.name} interpretation of Raga ${raga.name}.`,
     `${raga.mood?.join(' and ') || 'Peaceful'} atmosphere with ${instrumentNames}.`,
-    lead ? lead.leadStyle : '',
+    ...styledInstruments(instrumentIds).map(i => i.playingStyle),
     `${genreData.production || 'High quality production'}.`,
   ].filter(Boolean).join(' ');
 
-  return applyLeadStyle({
-    prompt: prompt.slice(0, 1000),
+  return applyPlayingStyles({
+    prompt: prompt.slice(0, 1500),
     style: genreData.sunoTags.slice(0, 6).join(', '),
     negativeTags: 'vocals, singing, harsh noise, off-key'
   }, instrumentIds);
 }
 
 /**
- * The chosen instrument that defines how the lead is played, if any
- * (an instrument with a `leadStyle`, such as carnatic_guitar).
+ * The chosen instruments that say how they should be played (those with a
+ * `playingStyle`, such as fusion_guitar or extreme_drums). One lead guitar
+ * at most, so two lead styles do not fight; other roles all count.
  */
-function leadInstrument(instrumentIds) {
-  return instrumentIds.map(id => getInstrumentById(id)).find(i => i?.leadStyle) || null;
+function styledInstruments(instrumentIds) {
+  const styled = instrumentIds.map(id => getInstrumentById(id)).filter(i => i?.playingStyle);
+  const lead = styled.find(i => i.role === 'melodic');
+  return styled.filter(i => i.role !== 'melodic' || i === lead);
 }
 
 /**
- * Put a lead instrument's style tags first in the style field and keep its
+ * Put the instruments' style tags first in the style field and keep their
  * look-alike sounds out. Applied to AI-written and fallback prompts alike,
- * so the lead style does not depend on which one produced the text.
+ * so the playing style does not depend on which one produced the text.
  */
-function applyLeadStyle(result, instrumentIds) {
-  const lead = leadInstrument(instrumentIds);
-  if (!lead) return result;
+function applyPlayingStyles(result, instrumentIds) {
+  const styled = styledInstruments(instrumentIds);
+  if (!styled.length) return result;
 
-  const tags = [...(lead.styleTags || []), ...String(result.style || '').split(',').map(t => t.trim()).filter(Boolean)];
+  const tags = [
+    ...styled.flatMap(i => i.styleTags || []),
+    ...String(result.style || '').split(',').map(t => t.trim()).filter(Boolean),
+  ];
   const seen = new Set();
   let style = '';
   for (const tag of tags) {
     const key = tag.toLowerCase();
     if (seen.has(key)) continue;
     const next = style ? `${style}, ${tag}` : tag;
-    if (next.length > 200) break;
+    if (next.length > 240) break;
     seen.add(key);
     style = next;
   }
 
-  const avoid = [...String(result.negativeTags || '').split(',').map(t => t.trim()).filter(Boolean), ...(lead.avoid || [])];
+  const avoid = [
+    ...String(result.negativeTags || '').split(',').map(t => t.trim()).filter(Boolean),
+    ...styled.flatMap(i => i.avoid || []),
+  ];
   const negativeTags = [...new Set(avoid)].join(', ').slice(0, 200);
 
   return { ...result, style, negativeTags };
@@ -264,7 +272,7 @@ export async function generateSunoPrompt(raga, genreId, instrumentIds, options =
     }
 
     // Validate and fix
-    result = applyLeadStyle(validateAndFixPrompt(result), instrumentIds);
+    result = applyPlayingStyles(validateAndFixPrompt(result), instrumentIds);
 
     log.info('AI Suno prompt generated', {
       promptLength: result.prompt?.length,

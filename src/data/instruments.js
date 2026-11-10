@@ -113,6 +113,21 @@ export const instruments = {
   // ============ Western/Modern Instruments ============
 
   // Electric
+  // Fusion lead guitar: one guitar that moves through three ways of playing
+  // in a single track. It opens Carnatic (sung, bent, sliding), turns to
+  // clean tapped hooks, and climbs to a neoclassical climax.
+  fusion_guitar: {
+    id: 'fusion_guitar',
+    name: 'Fusion Lead Guitar',
+    category: 'western_electric',
+    sunoDesc: 'virtuoso electric lead guitar blending Carnatic gamaka bends and slides, clean tapped progressive hooks and neoclassical sweep-picked runs',
+    styleTags: ['Indian progressive metal', 'Carnatic guitar lead', 'Neoclassical shred', 'Tapped prog hooks'],
+    playingStyle: 'One lead electric guitar carries the raga melody and changes character as the track unfolds. It opens singing like a voice, with Carnatic gamaka bends, oscillations on the important notes and long slides into each phrase. It breaks into clean, glassy tapped and hybrid-picked hooks with harmonics. It builds to a neoclassical climax of blazing sweep-picked runs with wide dramatic vibrato. Heavy riffs answer the lead and never play over it.',
+    avoid: ['sitar', 'veena', 'atonal shredding'],
+    ornamentAmount: 1.6,
+    gmProgram: 29,
+    role: 'melodic'
+  },
   // Carnatic-style lead guitar: the electric guitar played the way a veena or
   // a voice carries a raga. The melody is sung on one sustained string voice,
   // notes are joined by slides and bends instead of being picked one by one,
@@ -124,8 +139,8 @@ export const instruments = {
     sunoDesc: 'Carnatic-style electric lead guitar with a singing sustained tone, wide gamaka bends, long slides between notes, veena-like phrasing and fluid legato runs',
     // Short tags that go first in the Suno style field when this instrument leads
     styleTags: ['Carnatic electric guitar lead', 'Indian progressive metal'],
-    // What the lead should do, in a sentence, for the prompt text
-    leadStyle: 'A single Carnatic-style electric guitar carries the raga melody like a voice: soaring sustained notes, gamaka bends and oscillations on the important notes, long slides into each phrase, fast legato runs between resting notes, and a lyrical melodic solo that builds to a climax. Heavy palm-muted riffs answer the lead and never play over it.',
+    // How this instrument should be played, in a sentence, for the prompt text
+    playingStyle: 'A single Carnatic-style electric guitar carries the raga melody like a voice: soaring sustained notes, gamaka bends and oscillations on the important notes, long slides into each phrase, fast legato runs between resting notes, and a lyrical melodic solo that builds to a climax. Heavy palm-muted riffs answer the lead and never play over it.',
     // Sounds Suno tends to swap in when it reads "Carnatic"
     avoid: ['sitar', 'veena', 'violin', 'atonal shredding'],
     // How much more ornament the guide melody gets (1 = normal)
@@ -142,7 +157,7 @@ export const instruments = {
     category: 'western_electric',
     sunoDesc: 'neoclassical virtuoso electric lead guitar with violin-like tone, blazing fast picked runs, sweep-picked arpeggios and wide dramatic vibrato',
     styleTags: ['Neoclassical metal', 'Virtuoso shred guitar lead'],
-    leadStyle: 'A neoclassical virtuoso electric guitar carries the raga melody: a violin-like singing tone, wide dramatic vibrato on every held note, blazing fast picked runs and sweep-picked arpeggios climbing through the scale in sequences, and a grand baroque-style solo with a harpsichord-like urgency. Galloping riffs and double-kick drums drive underneath.',
+    playingStyle: 'A neoclassical virtuoso electric guitar carries the raga melody: a violin-like singing tone, wide dramatic vibrato on every held note, blazing fast picked runs and sweep-picked arpeggios climbing through the scale in sequences, and a grand baroque-style solo with a harpsichord-like urgency. Galloping riffs and double-kick drums drive underneath.',
     avoid: ['sitar', 'synth lead', 'sloppy playing'],
     ornamentAmount: 1.2,
     gmProgram: 30,
@@ -157,7 +172,7 @@ export const instruments = {
     category: 'western_electric',
     sunoDesc: 'clean modern progressive lead guitar with two-hand tapping, hybrid-picked melodic hooks, harmonics, quick slides and percussive muted notes',
     styleTags: ['Modern instrumental progressive', 'Clean tapped guitar lead', 'Math rock'],
-    leadStyle: 'A clean, glassy modern progressive guitar carries the raga melody as bright catchy hooks: two-hand tapping, hybrid-picked lines, natural harmonics, quick slides and percussive muted notes, played with tight precision. Syncopated drums with crisp hi-hat rolls and deep sub bass sit underneath, with sudden stops and a heavy low-tuned riff for contrast.',
+    playingStyle: 'A clean, glassy modern progressive guitar carries the raga melody as bright catchy hooks: two-hand tapping, hybrid-picked lines, natural harmonics, quick slides and percussive muted notes, played with tight precision. Syncopated drums with crisp hi-hat rolls and deep sub bass sit underneath, with sudden stops and a heavy low-tuned riff for contrast.',
     avoid: ['sitar', 'muddy distortion', 'screaming leads'],
     ornamentAmount: 1,
     gmProgram: 27, // Clean Guitar
@@ -178,6 +193,20 @@ export const instruments = {
     sunoDesc: 'deep bass guitar with punchy low-end and groove',
     gmProgram: 34, // Electric Bass
     role: 'bass'
+  },
+  // Progressive extreme-metal drumming: wide dynamics. Quiet passages get
+  // jazz-touched grooves with ghost notes and odd meters; the peaks get
+  // relentless double-kick and blast beats.
+  extreme_drums: {
+    id: 'extreme_drums',
+    name: 'Progressive Extreme Drums',
+    category: 'western_percussion',
+    sunoDesc: 'progressive extreme-metal drums with jazz-touched ghost-note grooves, shifting odd meters, relentless double-kick and blast beats',
+    styleTags: ['Progressive death metal drums', 'Blast beats', 'Symphonic black metal intensity'],
+    playingStyle: 'The drums are progressive and extreme with wide dynamics: in the quiet passages, jazz-touched grooves with ghost notes, ride cymbal and shifting odd meters; sudden drops to half-time; then at the peaks relentless double-kick, blast beats and huge rolling tom fills. The contrast between hushed and crushing sections drives the track.',
+    avoid: ['drum machine'],
+    gmProgram: null,
+    role: 'rhythm'
   },
   drums: {
     id: 'drums',

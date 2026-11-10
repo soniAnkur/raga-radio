@@ -33,9 +33,9 @@ export const genres = {
     name: 'Metal / Heavy',
     description: 'Heavy riffs, distorted guitars, powerful drums',
     sunoTags: ['Metal', 'Heavy', 'Powerful', 'Aggressive', 'Distorted', 'Intense', 'Progressive'],
-    instruments: ['carnatic_guitar', 'neoclassical_guitar', 'prog_guitar', 'electric_guitar', 'bass_guitar', 'drums', 'double_bass_drums', 'synth_lead', 'orchestral_hits'],
+    instruments: ['fusion_guitar', 'carnatic_guitar', 'neoclassical_guitar', 'prog_guitar', 'electric_guitar', 'bass_guitar', 'extreme_drums', 'drums', 'double_bass_drums', 'synth_lead', 'orchestral_hits'],
     moodMapping: ['Serious', 'Majestic', 'Heroic', 'Mysterious', 'Devotional'],
-    defaultInstruments: ['carnatic_guitar', 'bass_guitar', 'drums'],
+    defaultInstruments: ['fusion_guitar', 'bass_guitar', 'extreme_drums'],
     bpmRange: { min: 80, max: 140 },
     production: 'Heavy distortion, crushing low-end, arena reverb'
   },
