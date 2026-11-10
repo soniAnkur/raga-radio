@@ -112,3 +112,61 @@ test('a piece keeps moving: few repeated phrases, few full-range sweeps', () => 
   assert.ok(repeats / phrases < 0.08, `repeated phrases ${(100 * repeats / phrases).toFixed(1)}%`);
   assert.ok(sweeps / long < 0.3, `full-range sweeps ${(100 * sweeps / long).toFixed(1)}%`);
 });
+
+// ---------- styles, prompts, research ----------
+import { mergeStyles, resolveStyles, defineStyle, buildSunoPrompt, researchArtist, BUILT_IN_STYLES } from './index.js';
+
+const LEGATO = {
+  name: 'Fusion legato lead', role: 'lead', inspiredBy: ['Some Player'], tags: ['Fusion legato guitar lead'], avoid: ['sitar'],
+  description: 'A fluid fusion lead guitar with a warm, vocal mid-range tone: long legato lines, wide interval slides and playful rhythmic displacement, from whisper-quiet phrases to roaring bends.',
+};
+
+test('styles: artists map to styles, custom ones win, unknowns are reported', () => {
+  const custom = defineStyle(LEGATO);
+  const pool = mergeStyles([custom]);
+  const r = resolveStyles({ styles: ['extreme_drums', 'nope'], artists: ['some  PLAYER', 'Nobody Known'] }, pool);
+  assert.deepEqual(r.styles.map((s) => s.id).sort(), ['extreme_drums', 'fusion_legato_lead']);
+  assert.deepEqual(r.unknownStyles, ['nope']);
+  assert.deepEqual(r.unknownArtists, ['Nobody Known']);
+});
+
+test('styles: a definition may not carry an artist name into Suno text', () => {
+  assert.throws(() => defineStyle({ ...LEGATO, description: `Plays like Some Player. ${LEGATO.description}` }), /Suno rejects artist names/);
+  assert.throws(() => defineStyle({ ...LEGATO, tags: ['Some Player style'] }), /Suno rejects artist names/);
+  assert.throws(() => defineStyle({ ...LEGATO, description: 'too short' }), /60 to 700/);
+  assert.throws(() => defineStyle({ ...LEGATO, name: 'carnatic guitar' }), /built-in style/);
+});
+
+test('prompt: several lead styles blend into one lead; limits hold; no names', () => {
+  const styles = ['carnatic_guitar', 'prog_guitar', 'neoclassical_guitar', 'extreme_drums'].map((id) => BUILT_IN_STYLES[id]);
+  const p = buildSunoPrompt({ raga: { name: 'Adana', mood: ['Heroic'] }, genre: { name: 'Metal', sunoTags: ['Metal', 'Heavy'], production: 'Arena reverb' }, instruments: ['guitar', 'drums'], styles });
+  assert.match(p.prompt, /One lead instrument carries the raga melody/);
+  assert.match(p.prompt, /The drums are progressive/);
+  assert.ok(p.prompt.length <= 1500 && p.style.length <= 240 && p.negativeTags.length <= 200);
+  assert.equal(p.ornamentAmount, 1.6);
+  const sent = `${p.prompt} ${p.style} ${p.negativeTags}`.toLowerCase();
+  for (const style of styles) for (const name of style.inspiredBy) assert.ok(!sent.includes(name.toLowerCase()), `${name} leaked`);
+  // "violin-like tone" is wanted by one style, so another style's ban on violin is dropped
+  assert.ok(!p.negativeTags.split(', ').includes('violin'));
+  // a plain request still works
+  const plain = buildSunoPrompt({ raga: { name: 'Yaman' }, genre: 'lofi' });
+  assert.equal(plain.style, 'lofi');
+});
+
+test('research: picks the artist page and the parts about the playing', async () => {
+  const article = 'Xavier Quill is a guitarist from Y.\n\n== Early life ==\nBorn in a town.\n\n== Musical style ==\n'
+    + 'Quill is known for fast alternate picking and wide vibrato, with long legato runs over odd time signatures and a clean, glassy tone.\n\n== Discography ==\nAlbum one.';
+  const fetchImpl = async (url) => ({
+    ok: true,
+    json: async () => (String(url).includes('list=search')
+      ? { query: { search: [{ title: 'Xavier Quill discography' }, { title: 'Xavier Quill' }] } }
+      : { query: { pages: { 1: { extract: article } } } }),
+  });
+  const r = await researchArtist('Xavier Quill', { fetchImpl });
+  assert.equal(r.found, true);
+  assert.equal(r.page, 'Xavier Quill');
+  assert.deepEqual(r.about_the_playing.map((s) => s.section), ['Musical style']);
+  assert.match(r.about_the_playing[0].text, /wide vibrato/);
+  const none = await researchArtist('Nobody', { fetchImpl: async () => ({ ok: true, json: async () => ({ query: { search: [] } }) }) });
+  assert.equal(none.found, false);
+});

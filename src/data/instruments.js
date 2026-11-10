@@ -3,6 +3,22 @@
  * Complete instrument definitions with Suno-friendly descriptions
  */
 
+import { BUILT_IN_STYLES } from '../../raga-engine/styles.js';
+
+/** An instrument whose playing style comes from the engine's style of the same id */
+function styled(id, fields) {
+  const style = BUILT_IN_STYLES[id];
+  return {
+    id,
+    ...fields,
+    sunoDesc: style.sound,
+    playingStyle: style.description,
+    styleTags: style.tags,
+    avoid: style.avoid,
+    ...(style.ornamentAmount ? { ornamentAmount: style.ornamentAmount } : {}),
+  };
+}
+
 export const instruments = {
   // ============ Indian Classical Instruments ============
 
@@ -112,72 +128,12 @@ export const instruments = {
 
   // ============ Western/Modern Instruments ============
 
-  // Electric
-  // Fusion lead guitar: one guitar that moves through three ways of playing
-  // in a single track. It opens Carnatic (sung, bent, sliding), turns to
-  // clean tapped hooks, and climbs to a neoclassical climax.
-  fusion_guitar: {
-    id: 'fusion_guitar',
-    name: 'Fusion Lead Guitar',
-    category: 'western_electric',
-    sunoDesc: 'virtuoso electric lead guitar blending Carnatic gamaka bends and slides, clean tapped progressive hooks and neoclassical sweep-picked runs',
-    styleTags: ['Indian progressive metal', 'Carnatic guitar lead', 'Neoclassical shred', 'Tapped prog hooks'],
-    playingStyle: 'One lead electric guitar carries the raga melody and changes character as the track unfolds. It opens singing like a voice, with Carnatic gamaka bends, oscillations on the important notes and long slides into each phrase. It breaks into clean, glassy tapped and hybrid-picked hooks with harmonics. It builds to a neoclassical climax of blazing sweep-picked runs with wide dramatic vibrato. Heavy riffs answer the lead and never play over it.',
-    avoid: ['sitar', 'veena', 'atonal shredding'],
-    ornamentAmount: 1.6,
-    gmProgram: 29,
-    role: 'melodic'
-  },
-  // Carnatic-style lead guitar: the electric guitar played the way a veena or
-  // a voice carries a raga. The melody is sung on one sustained string voice,
-  // notes are joined by slides and bends instead of being picked one by one,
-  // and important notes are shaken (gamaka) rather than held still.
-  carnatic_guitar: {
-    id: 'carnatic_guitar',
-    name: 'Carnatic Guitar',
-    category: 'western_electric',
-    sunoDesc: 'Carnatic-style electric lead guitar with a singing sustained tone, wide gamaka bends, long slides between notes, veena-like phrasing and fluid legato runs',
-    // Short tags that go first in the Suno style field when this instrument leads
-    styleTags: ['Carnatic electric guitar lead', 'Indian progressive metal'],
-    // How this instrument should be played, in a sentence, for the prompt text
-    playingStyle: 'A single Carnatic-style electric guitar carries the raga melody like a voice: soaring sustained notes, gamaka bends and oscillations on the important notes, long slides into each phrase, fast legato runs between resting notes, and a lyrical melodic solo that builds to a climax. Heavy palm-muted riffs answer the lead and never play over it.',
-    // Sounds Suno tends to swap in when it reads "Carnatic"
-    avoid: ['sitar', 'veena', 'violin', 'atonal shredding'],
-    // How much more ornament the guide melody gets (1 = normal)
-    ornamentAmount: 1.6,
-    gmProgram: 29, // Overdriven Guitar
-    role: 'melodic'
-  },
-  // Neoclassical lead guitar: violin-like virtuoso playing. Very fast picked
-  // and swept runs, wide dramatic vibrato on held notes, long climbing
-  // sequences. The runs use the raga's notes, taken from the guide melody.
-  neoclassical_guitar: {
-    id: 'neoclassical_guitar',
-    name: 'Neoclassical Guitar',
-    category: 'western_electric',
-    sunoDesc: 'neoclassical virtuoso electric lead guitar with violin-like tone, blazing fast picked runs, sweep-picked arpeggios and wide dramatic vibrato',
-    styleTags: ['Neoclassical metal', 'Virtuoso shred guitar lead'],
-    playingStyle: 'A neoclassical virtuoso electric guitar carries the raga melody: a violin-like singing tone, wide dramatic vibrato on every held note, blazing fast picked runs and sweep-picked arpeggios climbing through the scale in sequences, and a grand baroque-style solo with a harpsichord-like urgency. Galloping riffs and double-kick drums drive underneath.',
-    avoid: ['sitar', 'synth lead', 'sloppy playing'],
-    ornamentAmount: 1.2,
-    gmProgram: 30,
-    role: 'melodic'
-  },
-  // Modern progressive lead guitar: clean and precise instead of distorted.
-  // Melodies are tapped and hybrid-picked into bright, catchy hooks with
-  // harmonics and slides, over tight syncopated grooves.
-  prog_guitar: {
-    id: 'prog_guitar',
-    name: 'Modern Prog Guitar',
-    category: 'western_electric',
-    sunoDesc: 'clean modern progressive lead guitar with two-hand tapping, hybrid-picked melodic hooks, harmonics, quick slides and percussive muted notes',
-    styleTags: ['Modern instrumental progressive', 'Clean tapped guitar lead', 'Math rock'],
-    playingStyle: 'A clean, glassy modern progressive guitar carries the raga melody as bright catchy hooks: two-hand tapping, hybrid-picked lines, natural harmonics, quick slides and percussive muted notes, played with tight precision. Syncopated drums with crisp hi-hat rolls and deep sub bass sit underneath, with sudden stops and a heavy low-tuned riff for contrast.',
-    avoid: ['sitar', 'muddy distortion', 'screaming leads'],
-    ornamentAmount: 1,
-    gmProgram: 27, // Clean Guitar
-    role: 'melodic'
-  },
+  // Instruments with a playing style. The style itself (how it is played,
+  // style tags, sounds to avoid) is defined once, in raga-engine/styles.js.
+  fusion_guitar: styled('fusion_guitar', { name: 'Fusion Lead Guitar', category: 'western_electric', gmProgram: 29, role: 'melodic' }),
+  carnatic_guitar: styled('carnatic_guitar', { name: 'Carnatic Guitar', category: 'western_electric', gmProgram: 29, role: 'melodic' }),
+  neoclassical_guitar: styled('neoclassical_guitar', { name: 'Neoclassical Guitar', category: 'western_electric', gmProgram: 30, role: 'melodic' }),
+  prog_guitar: styled('prog_guitar', { name: 'Modern Prog Guitar', category: 'western_electric', gmProgram: 27, role: 'melodic' }),
   electric_guitar: {
     id: 'electric_guitar',
     name: 'Electric Guitar',
@@ -194,20 +150,7 @@ export const instruments = {
     gmProgram: 34, // Electric Bass
     role: 'bass'
   },
-  // Progressive extreme-metal drumming: wide dynamics. Quiet passages get
-  // jazz-touched grooves with ghost notes and odd meters; the peaks get
-  // relentless double-kick and blast beats.
-  extreme_drums: {
-    id: 'extreme_drums',
-    name: 'Progressive Extreme Drums',
-    category: 'western_percussion',
-    sunoDesc: 'progressive extreme-metal drums with jazz-touched ghost-note grooves, shifting odd meters, relentless double-kick and blast beats',
-    styleTags: ['Progressive death metal drums', 'Blast beats', 'Symphonic black metal intensity'],
-    playingStyle: 'The drums are progressive and extreme with wide dynamics: in the quiet passages, jazz-touched grooves with ghost notes, ride cymbal and shifting odd meters; sudden drops to half-time; then at the peaks relentless double-kick, blast beats and huge rolling tom fills. The contrast between hushed and crushing sections drives the track.',
-    avoid: ['drum machine'],
-    gmProgram: null,
-    role: 'rhythm'
-  },
+  extreme_drums: styled('extreme_drums', { name: 'Progressive Extreme Drums', category: 'western_percussion', gmProgram: null, role: 'rhythm' }),
   drums: {
     id: 'drums',
     name: 'Drums',

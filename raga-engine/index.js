@@ -5,6 +5,9 @@ export * from './validate.js';
 export { renderReference, encodeWav, decodeWav, tonicToMidi, pitchAt } from './synth.js';
 export * from './certify.js';
 export * from './phrases.js';
+export * from './styles.js';
+export * from './prompt.js';
+export * from './research.js';
 
 import { buildGrammar } from './grammar.js';
 import { generateMelody } from './melody.js';
