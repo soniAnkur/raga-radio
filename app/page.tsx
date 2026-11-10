@@ -84,7 +84,7 @@ const appShellHTML = `
     <section class="screen" id="screen-library">
       <div class="screen-scroll">
         <div class="library-header">
-          <h1 class="screen-title">Library</h1>
+          <h1 class="screen-title">V2 Tracks</h1>
           <div class="library-stats">
             <div class="stat-pill"><span class="stat-value" id="track-count">0</span><span class="stat-label">tracks</span></div>
             <div class="stat-pill"><span class="stat-value" id="total-duration">0:00</span><span class="stat-label">total</span></div>
