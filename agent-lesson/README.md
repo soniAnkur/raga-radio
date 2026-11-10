@@ -46,3 +46,18 @@ Try:
 - `What did I just ask you?` It knows, because the question is in `messages`. The model itself remembers nothing between requests.
 
 Notice: a model can only write text. Everything an agent does comes from what we build around that.
+
+## Chapter 2: a tool
+
+The agent gets one tool, `pick_raga`, which looks up ragas for a time of day in Raga Radio.
+
+A tool has two halves:
+- for the model: a name, a description and the shape of the input (`tools`)
+- for us: ordinary code that does the work (`handlers`)
+
+Try:
+- `Something peaceful for this evening.` Watch the two lines it prints: `model asks` and `we return`.
+- `Hello!` No tool is called. The model decides when a tool is needed.
+- Change the tool's description to something vague and ask again. The description is the only thing the model knows about the tool.
+
+Notice: the model never runs anything. It writes a request and stops (`stop_reason` is `tool_use`). Our code runs the tool and sends the result back, and only then does the model answer.
