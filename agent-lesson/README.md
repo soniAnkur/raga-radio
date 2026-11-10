@@ -93,3 +93,19 @@ Try:
 - Read the `save_song` request it prints. The task id, key and reference link all came from the `start_song` result several steps earlier.
 
 Notice two things. The waiting is done by code, because every trip to the model costs money and a `sleep` does not. And the agent has no variables of its own: its memory of the task id is the `messages` list, which is why every result has to go back into it.
+
+## Chapter 6: errors go back to the model
+
+Until now a failed tool crashed the program. Now the failure is returned to the model as a result marked `is_error`, written so the model knows what to do next.
+
+Try:
+- Unset the key (`unset RAGA_API_KEY`) and ask for a track. It explains that a key is needed instead of crashing.
+- Ask for a track when the Suno account is out of credits. It tells you the owner needs to top up, and does not retry.
+- Disconnect from the network and send a message. The turn is dropped and you can try again.
+
+Notice: the model can only react to what it is told. `Error: failed` gives it nothing; "the key is missing, retrying will not help, tell the person to set RAGA_API_KEY" lets it do the right thing. Writing good error messages for tools is part of building an agent.
+
+## Where to go next
+
+- Add a tool of your own, such as one that lists the saved library (`GET /api/tracks`), and see the agent start using it without being told.
+- The engine behind Raga Radio is also an MCP server in `raga-engine/`. MCP is how tools like these are shared between many agents instead of living in one file.

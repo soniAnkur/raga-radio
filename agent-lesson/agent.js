@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Raga agent, chapter 5: waiting, and carrying state.
+// Raga agent, chapter 6: when things go wrong.
 //
 // Run:  ANTHROPIC_API_KEY=... RAGA_API_KEY=... node agent.js
 // Needs Node 18 or newer. No packages to install.
@@ -22,9 +22,26 @@ async function ragaApi(path, { method = 'GET', body } = {}) {
   const headers = { 'content-type': 'application/json' };
   if (RAGA_API_KEY) headers['x-raga-key'] = RAGA_API_KEY;
   const response = await fetch(`${RAGA_API}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
-  const data = await response.json();
-  if (!response.ok || data.success === false) throw new Error(data.error || `Raga Radio returned ${response.status}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.success === false) throw new Error(explain(response.status, data.error));
   return data;
+}
+
+// A tool error is a message to the model, so write it for the model: say
+// what went wrong and what to do next. "Failed" teaches it nothing.
+function explain(status, error = '') {
+  if (status === 401) {
+    return 'The Raga Radio access key is missing or wrong. Retrying will not help. ' +
+      'Tell the person to set RAGA_API_KEY, which the owner of Raga Radio can give them.';
+  }
+  if (/credits? insufficient|top up/i.test(error)) {
+    return 'The Suno account behind Raga Radio is out of credits, so no track was started and nothing was charged. ' +
+      'Retrying will not help. Tell the person the owner needs to top up.';
+  }
+  if (status === 404 || /not found/i.test(error)) {
+    return `${error || 'Not found'}. Check the id: raga ids come from pick_raga and style ids from list_styles.`;
+  }
+  return error || `Raga Radio returned ${status}`;
 }
 
 const SYSTEM = `You are a music assistant for Raga Radio, an app that makes tracks
@@ -242,14 +259,29 @@ async function runTurn() {
     for (const call of reply.content.filter((b) => b.type === 'tool_use')) {
       console.log(`  step ${step}  model asks:  ${call.name}(${JSON.stringify(call.input)})`);
       let result;
-      if (NEEDS_APPROVAL.has(call.name) && (await ask('              this spends credits. Run it? (y/n) ')) !== 'y') {
-        // Saying no is a result too. The model reads it and carries on.
-        result = { declined: 'The person said no. Do not try again; ask what they would like instead.' };
-      } else {
-        result = await handlers[call.name](call.input);
+      let failed = false;
+      try {
+        if (!handlers[call.name]) throw new Error(`There is no tool called ${call.name}.`);
+        if (NEEDS_APPROVAL.has(call.name) && (await ask('              this spends credits. Run it? (y/n) ')) !== 'y') {
+          // Saying no is a result too. The model reads it and carries on.
+          result = { declined: 'The person said no. Do not try again; ask what they would like instead.' };
+        } else {
+          result = await handlers[call.name](call.input);
+        }
+      } catch (error) {
+        // A failed tool does not end the program. The failure goes back to
+        // the model, marked as an error, and the model decides what to do:
+        // fix its input, try another way, or explain the problem.
+        result = error.message;
+        failed = true;
       }
-      console.log(`  step ${step}  we return:   ${preview(result)}`);
-      results.push({ type: 'tool_result', tool_use_id: call.id, content: JSON.stringify(result) });
+      console.log(`  step ${step}  we return:   ${failed ? 'ERROR ' : ''}${preview(result)}`);
+      results.push({
+        type: 'tool_result',
+        tool_use_id: call.id,
+        content: typeof result === 'string' ? result : JSON.stringify(result),
+        is_error: failed,
+      });
     }
     messages.push({ role: 'user', content: results });
   }
@@ -271,13 +303,21 @@ async function ask(prompt) {
   return done ? null : value.trim();
 }
 
-console.log('Raga agent, chapter 5. Type a message, or "exit" to quit.\n');
+console.log('Raga agent, chapter 6. Type a message, or "exit" to quit.\n');
 while (true) {
   const input = await ask('you > ');
   if (input === null || input === 'exit') break;
   if (!input) continue;
 
+  const turnStart = messages.length;
   messages.push({ role: 'user', content: input });
-  console.log(`\nagent > ${await runTurn()}\n`);
+  try {
+    console.log(`\nagent > ${await runTurn()}\n`);
+  } catch (error) {
+    // The model call itself failed (network, bad key, rate limit). Forget
+    // this turn so the history stays valid, and let the person try again.
+    messages.length = turnStart;
+    console.log(`\n(could not reach the model: ${error.message})\n`);
+  }
 }
 rl.close();
