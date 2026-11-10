@@ -90,3 +90,25 @@ test('suno client: both request styles, errors, status', async () => {
   await assert.rejects(() => createSunoClient({ apiKey: 'k', baseUrl: 'https://fail', fetchImpl }).cover({ uploadUrl: 'u' }), /402: no credits/);
   await assert.rejects(() => createSunoClient({ apiKey: '', fetchImpl }).cover({ uploadUrl: 'u' }), /SUNO_API_KEY/);
 });
+
+test('a piece keeps moving: few repeated phrases, few full-range sweeps', () => {
+  const g = buildGrammar(withPhrases(YAMAN, 'yaman'));
+  let phrases = 0, repeats = 0, long = 0, sweeps = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const m = generateMelody(g, { seed, duration: 160 });
+    const lines = {};
+    for (const e of m.events) (lines[e.phrase] ||= []).push(e.pitch);
+    const all = Object.values(lines);
+    const body = all.slice(0, -3); // the closing tihai repeats on purpose
+    const seen = new Set();
+    for (const l of body) {
+      const key = l.join(',');
+      if (l.length >= 4) { phrases++; if (seen.has(key)) repeats++; }
+      seen.add(key);
+      if (l.length >= 6) { long++; if (Math.max(...l) - Math.min(...l) >= 12) sweeps++; }
+    }
+    assert.ok(m.duration >= 140, `seed ${seed}: piece is ${m.duration.toFixed(0)}s`);
+  }
+  assert.ok(repeats / phrases < 0.08, `repeated phrases ${(100 * repeats / phrases).toFixed(1)}%`);
+  assert.ok(sweeps / long < 0.3, `full-range sweeps ${(100 * sweeps / long).toFixed(1)}%`);
+});

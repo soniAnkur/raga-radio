@@ -21,7 +21,7 @@ export function makeRng(seed = Date.now()) {
 }
 
 export function generateMelody(grammar, options = {}) {
-  const { duration = 75, seed = Date.now(), sections = { alap: 0.55, jor: 0.3, taan: 0.15 } } = options;
+  const { duration = 160, seed = Date.now(), sections = { alap: 0.5, jor: 0.33, taan: 0.17 } } = options;
   const rand = makeRng(seed);
   const pick = (arr) => arr[Math.floor(rand() * arr.length)];
   const between = (lo, hi) => lo + rand() * (hi - lo);
@@ -33,6 +33,38 @@ export function generateMelody(grammar, options = {}) {
   let phraseId = 0;
   let last = 0;
   const bankUse = new Map();
+
+  // ----- memory of what has been played, so the piece keeps moving on -----
+  const seenLines = new Set();
+  const seenGrams = new Set();
+  const grams = (line) => {
+    const out = [];
+    for (let i = 0; i + 4 <= line.length; i++) out.push(line.slice(i, i + 4).join(','));
+    return out;
+  };
+  /** 1 = entirely new material, 0 = an exact repeat of an earlier phrase */
+  const novelty = (line) => {
+    if (seenLines.has(line.join(','))) return 0;
+    const gs = grams(line);
+    if (!gs.length) return 1;
+    return gs.filter((x) => !seenGrams.has(x)).length / gs.length;
+  };
+  const remember = (line) => {
+    seenLines.add(line.join(','));
+    for (const x of grams(line)) seenGrams.add(x);
+  };
+  /** Try several candidates; take the first that is fresh enough, else the freshest. Never an exact repeat. */
+  const fresh = (make, { tries = 12, min = 0.5, minLen = 2, maxLen = 12 } = {}) => {
+    let best = null, bestN = 0;
+    for (let i = 0; i < tries; i++) {
+      const line = make();
+      if (!line || line.length < minLen || line.length > maxLen) continue;
+      const n = novelty(line);
+      if (n >= min) return line;
+      if (n > bestN) { best = line; bestN = n; }
+    }
+    return best;
+  };
 
   /** Append one phrase. `durs` gives each note's length, `rest` the breath after it. */
   const emit = (pitches, durs, rest, section, vel = 0.7) => {
@@ -48,9 +80,12 @@ export function generateMelody(grammar, options = {}) {
     t += rest;
     phraseId++;
     last = pitches[pitches.length - 1];
+    remember(pitches);
   };
 
-  /** start → apex → end as one legal line */
+  // ----- phrase shapes; every one is a legal route through the raga -----
+
+  /** start → apex → end */
   const arc = (start, apex, end, lo, hi) => {
     const a = g.path(start, apex, { lo, hi, rand });
     const b = g.path(apex, end, { lo, hi, rand });
@@ -58,6 +93,7 @@ export function generateMelody(grammar, options = {}) {
     return [...a, ...b.slice(1)];
   };
 
+  /** one of the raga's own phrases, each used a limited number of times */
   const bankPhrase = (ceil, floor, maxUses = 2) => {
     const fits = g.bank.filter((ph) => Math.max(...ph) <= ceil && Math.min(...ph) >= floor
       && (bankUse.get(ph) || 0) < maxUses);
@@ -65,6 +101,67 @@ export function generateMelody(grammar, options = {}) {
     const ph = pick(fits);
     bankUse.set(ph, (bankUse.get(ph) || 0) + 1);
     return ph;
+  };
+
+  const settle = (line, lo, hi) => {
+    const end = line[line.length - 1];
+    if (isNyas(end)) return line;
+    const rests = g.pitches(lo, hi).filter(isNyas).sort((a, b) => Math.abs(a - end) - Math.abs(b - end));
+    for (const r of rests.slice(0, 3)) {
+      const tail = g.path(end, r, { lo: lo - 1, hi: hi + 1, rand, maxLen: 4 });
+      if (tail) return [...line, ...tail.slice(1)];
+    }
+    return line;
+  };
+
+  /** climbs (or falls) in steps forward and smaller steps back, then settles on a resting note */
+  const zigzag = (start, dir, lo, hi, turns = 3) => {
+    const line = [start];
+    let cur = start;
+    for (let k = 0; k < turns; k++) {
+      const fwd = g.pitches(lo, hi).filter((p) => (dir > 0 ? p > cur + 1 && p <= cur + 7 : p < cur - 1 && p >= cur - 7));
+      if (!fwd.length) break;
+      const a = pick(fwd);
+      const seg = g.path(cur, a, { lo, hi, rand, maxLen: 6 });
+      if (!seg) break;
+      line.push(...seg.slice(1));
+      cur = a;
+      if (k === turns - 1) break;
+      const back = g.pitches(lo, hi).filter((p) => (dir > 0 ? p < cur && p >= cur - 4 : p > cur && p <= cur + 4));
+      if (!back.length) break;
+      const b = pick(back);
+      const ret = g.path(cur, b, { lo, hi, rand, maxLen: 4 });
+      if (!ret) break;
+      line.push(...ret.slice(1));
+      cur = b;
+    }
+    return line.length >= 4 ? settle(line, lo, hi) : null;
+  };
+
+  /** the same small figure started from successive notes (palta) */
+  const sequence = (lo, hi, dir, size = 3) => {
+    const L = dir > 0 ? g.path(lo, hi, { lo: lo - 1, hi: hi + 1, rand }) : g.path(hi, lo, { lo: lo - 1, hi: hi + 1, rand });
+    if (!L || L.length < size + 2) return null;
+    const line = [];
+    for (let i = 0; i + size <= L.length; i++) {
+      const group = L.slice(i, i + size);
+      if (line.length && !g.isAllowed(line[line.length - 1], group[0])) return null;
+      line.push(...group);
+    }
+    return settle(line, Math.min(lo, hi) - 1, Math.max(lo, hi) + 1);
+  };
+
+  /** opens like one of the raga's phrases, then goes somewhere new */
+  const fragment = (lo, hi) => {
+    const fits = g.bank.filter((ph) => ph[0] >= lo - 2 && ph[0] <= hi);
+    if (!fits.length) return null;
+    const ph = pick(fits);
+    const headLen = Math.min(ph.length - 1, 2 + Math.floor(rand() * 2));
+    const head = ph.slice(0, headLen);
+    const ends = g.pitches(lo, hi).filter(isNyas);
+    if (!ends.length) return null;
+    const tail = g.path(head[head.length - 1], pick(ends), { lo: lo - 2, hi: hi + 2, rand });
+    return tail ? [...head, ...tail.slice(1)] : null;
   };
 
   // ---------- ALAP ----------
@@ -101,12 +198,15 @@ export function generateMelody(grammar, options = {}) {
     const from = Math.abs(last - T) > 9 ? prevTarget : last;
     alapPhrase(g.path(from, T, { lo: floor, hi, rand }));
     for (let k = 1; k < perTarget; k++) {
-      const region = g.pitches(Math.max(floor, T - 5), T + (rand() < 0.3 ? 2 : 0));
-      const apex = pick(region);
       const ends = g.pitches(floor, T).filter(isNyas);
-      const end = k === perTarget - 1 && rand() < 0.5 ? T : pick(ends.length ? ends : [0]);
-      const line = arc(last, apex, end, floor, hi);
-      if (line && line.length > 1) alapPhrase(line);
+      const kind = rand();
+      const line = fresh(() => {
+        if (kind < 0.25) return fragment(Math.max(floor, T - 7), hi);
+        if (kind < 0.45) return zigzag(last, rand() < 0.5 ? 1 : -1, Math.max(floor, T - 7), hi, 2);
+        const region = g.pitches(Math.max(floor, T - 5), T + (rand() < 0.3 ? 2 : 0));
+        return arc(last, pick(region), pick(ends.length ? ends : [0]), floor, hi);
+      }, { min: 0.34, minLen: 2, maxLen: 10 });
+      if (line) alapPhrase(line);
     }
     if (rand() < 0.7) {
       const ph = bankPhrase(hi, floor);
@@ -129,43 +229,75 @@ export function generateMelody(grammar, options = {}) {
   }
 
   // ---------- JOR ----------
+  // The melody moves through registers (low, middle, high, back) a window at a
+  // time, with a different phrase shape each time, so it never settles into
+  // one up-and-down sweep.
   const bpm = Math.round(between(80, 104));
   const beat = 60 / bpm;
-  const remaining = Math.max(22, duration - t);
+  const remaining = Math.max(30, duration - t);
   const jorShare = sections.jor / (sections.jor + sections.taan);
   const jorEnd = t + remaining * jorShare;
   const jorDurs = (n) => Array.from({ length: n }, (_, i) =>
-    (i === n - 1 ? 2 : rand() < 0.62 ? 0.5 : 1) * beat);
+    (i === n - 1 ? 2 : rand() < 0.1 ? 1.5 : rand() < 0.62 ? 0.5 : 1) * beat);
+  const windows = [[-5, 5], [-1, 7], [2, 12], [5, 16], [2, 12], [-1, 7]];
+  const shapes = ['arc', 'bank', 'zigzag', 'fragment'];
+  let prevShape = null;
+  let count = 0;
   let guard = 0;
-  while (t < jorEnd && guard++ < 60) {
-    let line;
-    if (rand() < 0.3) line = bankPhrase(17, -5, 4);
-    if (!line) {
-      const start = isNyas(last) ? last : 0;
-      const region = g.pitches(Math.max(-3, start - 5), Math.min(16, start + 8));
-      const ends = g.pitches(-1, 12).filter(isNyas);
-      line = arc(start, pick(region), pick(ends), -5, 17);
+  while (t < jorEnd && guard++ < 160) {
+    const [lo, hi] = windows[Math.floor(count / 2) % windows.length];
+    const rests = g.pitches(lo, hi).filter(isNyas);
+    if (!rests.length) { count++; continue; }
+    const start = last >= lo && last <= hi ? last : pick(rests);
+    const shape = pick(shapes.filter((s) => s !== prevShape));
+    let line = null;
+    if (shape === 'bank') {
+      line = bankPhrase(hi + 2, lo - 2, 2);
+    } else {
+      line = fresh(() => (shape === 'arc' ? arc(start, pick(g.pitches(lo, hi)), pick(rests), lo - 1, hi + 1)
+        : shape === 'zigzag' ? zigzag(start, rand() < 0.5 ? 1 : -1, lo, hi, 2 + Math.floor(rand() * 2))
+        : fragment(lo, hi)), { minLen: 3, maxLen: 12 });
     }
-    if (!line || line.length < 3 || line.length > 12) continue;
-    emit(line, jorDurs(line.length), beat, 'jor', 0.76);
+    prevShape = shape;
+    if (!line) continue;
+    emit(line, jorDurs(line.length), beat * (rand() < 0.3 ? 1.5 : 1), 'jor', 0.76);
+    count++;
   }
 
   // ---------- TAAN ----------
+  // Each run is a different kind; the full sweep up and down happens once.
   const fast = beat * 0.4;
-  const runUp = g.path(0, 12, { lo: -1, hi: 13, rand });
-  const runDown = g.path(12, 0, { lo: -1, hi: 13, rand });
-  const taanEnd = t + remaining * (1 - jorShare) * 0.5;
-  guard = 0;
-  while (runUp && runDown && t < taanEnd && guard++ < 6) {
-    const top = guard % 2 === 0 && g.pitches(13, 16).length ? pick(g.pitches(13, 16)) : 12;
-    const up = top === 12 ? runUp : g.path(0, top, { lo: -1, hi: 17, rand });
+  const taanDurs = (line) => line.map((_, i) =>
+    (i === line.length - 1 ? beat * 2 : i % 4 === 3 && rand() < 0.35 ? fast * 2 : fast));
+  const taanEnd = t + remaining * (1 - jorShare) * 0.7;
+  const kinds = ['zigzagUp', 'sequenceUp', 'bankChain', 'sweep', 'sequenceDown', 'zigzagDown'].sort(() => rand() - 0.5);
+  const makeTaan = (kind) => {
+    if (kind === 'zigzagUp') return zigzag(pick(g.pitches(-1, 2)), 1, -1, 13, 4);
+    if (kind === 'zigzagDown') return zigzag(pick(g.pitches(10, 14)), -1, -1, 14, 4);
+    if (kind === 'sequenceUp' || kind === 'sequenceDown') {
+      const lo = pick(g.pitches(-1, 5));
+      const tops = g.pitches(lo + 6, lo + 10);
+      return tops.length ? sequence(lo, pick(tops), kind === 'sequenceUp' ? 1 : -1) : null;
+    }
+    if (kind === 'bankChain') {
+      if (g.bank.length < 2) return null;
+      const a = pick(g.bank);
+      const b = pick(g.bank.filter((x) => x !== a));
+      const link = g.path(a[a.length - 1], b[0], { lo: -5, hi: 17, rand, maxLen: 6 });
+      return link ? settle([...a, ...link.slice(1), ...b.slice(1)], -1, 14) : null;
+    }
+    const top = pick(g.pitches(12, 16));
+    const up = g.path(0, top, { lo: -1, hi: 17, rand });
     const down = g.path(top, 0, { lo: -1, hi: 17, rand });
-    if (!up || !down) break;
-    const line = [...up, ...down.slice(1)];
-    const durs = line.map((_, i) => (i === line.length - 1 ? beat * 2 : fast));
-    emit(line, durs, Math.max(0.34, beat * 0.5), 'taan', 0.82);
+    return up && down ? [...up, ...down.slice(1)] : null;
+  };
+  for (const kind of kinds) {
+    if (t >= taanEnd) break;
+    const line = fresh(() => makeTaan(kind), { min: 0.4, minLen: 5, maxLen: 24, tries: 8 });
+    if (line) emit(line, taanDurs(line), Math.max(0.34, beat * 0.5), 'taan', 0.82);
   }
   // tihai: a short figure three times, the third landing on Sa
+  const runDown = g.path(12, 0, { lo: -1, hi: 13, rand });
   const home = g.bank.find((ph) => ph[ph.length - 1] === 0 && ph.length >= 3 && ph.length <= 5)
     || (runDown ? runDown.slice(-4) : [0]);
   for (let k = 0; k < 3; k++) {

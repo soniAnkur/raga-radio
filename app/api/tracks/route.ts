@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { loadTrackMetadata } from '@/src/services/sunoApi.js';
 import { getAllRagas } from '@/src/data/ragas.js';
 import { getScaleNotes } from '@/src/converters/swaraConverter.js';
@@ -16,10 +16,20 @@ function normalizeGenre(genre: unknown) {
   return String(genre).replace(/[_-]+([a-zA-Z])/g, (_, c) => c.toUpperCase());
 }
 
-export async function GET() {
+// The library shows V2 tracks: everything made since the phrase engine went
+// live. Older tracks stay in R2 and in the metadata file, and come back with
+// /api/tracks?all=1 or by moving LIBRARY_SINCE earlier.
+const LIBRARY_SINCE = process.env.LIBRARY_SINCE || '2026-11-10T00:00:00.000Z';
+
+export async function GET(request: NextRequest) {
   try {
     // Load tracks from R2 metadata
-    const metadataTracks = await loadTrackMetadata();
+    const allTracks = await loadTrackMetadata();
+    const showAll = request.nextUrl.searchParams.get('all') === '1';
+    const since = new Date(LIBRARY_SINCE).getTime();
+    const metadataTracks = showAll
+      ? allTracks
+      : allTracks.filter((track: any) => new Date(track.createdAt).getTime() >= since);
 
     // Enhance tracks with raga info
     const allRagas = getAllRagas();
@@ -52,10 +62,15 @@ export async function GET() {
         ...track,
         raga: ragaInfo,
         genre: normalizeGenre(track.genre),
+        version: new Date(track.createdAt).getTime() >= since ? 'v2' : 'v1',
       };
     }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    return NextResponse.json({ success: true, tracks: enhancedTracks });
+    return NextResponse.json({
+      success: true,
+      tracks: enhancedTracks,
+      hiddenOlderTracks: allTracks.length - metadataTracks.length,
+    });
   } catch (error: any) {
     console.error('[tracks] failed to build track list:', error?.message);
     return NextResponse.json({ success: true, tracks: [], warning: error?.message || 'Could not load tracks' });

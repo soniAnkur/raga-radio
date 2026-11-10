@@ -92,7 +92,7 @@ server.registerTool('compose_melody', {
   description: 'Compose a rule-checked raga melody (alap, jor, taan) with ornaments that stay inside the raga. Optionally writes a reference WAV with a tanpura-style drone.',
   inputSchema: {
     ...ragaArgs,
-    duration: z.number().min(30).max(360).optional().describe('Target seconds (default 75). The alap always completes, so short targets run a little over.'),
+    duration: z.number().min(30).max(360).optional().describe('Target seconds (default 160). The alap always completes, so short targets run a little over.'),
     tonic: z.string().optional().describe('Western note for Sa, e.g. "C#", "D" (default C)'),
     seed: z.number().int().optional().describe('Same seed gives the same melody'),
     drone: z.boolean().optional().describe('Include the drone in the WAV (default true)'),

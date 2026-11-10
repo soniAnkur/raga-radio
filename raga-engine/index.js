@@ -19,7 +19,7 @@ import { withPhrases } from './phrases.js';
  * either valid or the call throws.
  */
 export function composeReference(raga, options = {}) {
-  const { id, duration = 75, tonic = 'C', seed = Date.now() % 2147483647, drone = true, render = true } = options;
+  const { id, duration = 160, tonic = 'C', seed = Date.now() % 2147483647, drone = true, render = true } = options;
   const grammar = buildGrammar(withPhrases(raga, id));
   let lastReport;
   for (let attempt = 0; attempt < 6; attempt++) {

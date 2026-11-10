@@ -19,6 +19,10 @@ import { composeReference, pitchToSwara } from '@/raga-engine/index.js';
 // Flats, to match the note names the prompt builders use
 const TONICS = ['C', 'Db', 'D', 'Eb', 'E'];
 
+// Suno turns a short guide into a full-length track by repeating it, so the
+// guide is always long enough to carry a whole track of new material.
+const MIN_GUIDE_SECONDS = 150;
+
 export const maxDuration = 120;
 
 export async function POST(
@@ -44,7 +48,7 @@ export async function POST(
     // Tanpura-style drone under the reference melody. Default: on when tanpura is among the instruments
     drone: droneOption = null,
     // How closely Suno follows the uploaded melody (0-1) and how far it may wander (0-1)
-    audioWeight = 0.8,
+    audioWeight = 0.7,
     weirdnessConstraint = 0.2,
     styleWeight = 0.65,
   } = body;
@@ -104,7 +108,7 @@ export async function POST(
       try {
         const composed = composeReference(raga, {
           id,
-          duration: parseInt(String(duration)),
+          duration: Math.max(parseInt(String(duration)) || 0, MIN_GUIDE_SECONDS),
           tonic,
           seed: seed ?? undefined,
           drone,
