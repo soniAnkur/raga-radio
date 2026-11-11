@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parsePhrase, buildGrammar, withPhrases, composeReference, validateMelody, certifyAudio, decodeWav,
-  generateMelody, addOrnaments, pc,
+  generateMelody, addOrnaments, pc, normalizeStructure, STARTER_STRUCTURES, researchMusic,
 } from './index.js';
 import { createSunoClient } from './suno.js';
 
@@ -142,7 +142,10 @@ test('prompt: several lead styles blend into one lead; limits hold; no names', (
   const p = buildSunoPrompt({ raga: { name: 'Adana', mood: ['Heroic'] }, genre: { name: 'Metal', sunoTags: ['Metal', 'Heavy'], production: 'Arena reverb' }, instruments: ['guitar', 'drums'], styles });
   assert.match(p.prompt, /One lead instrument carries the raga melody/);
   assert.match(p.prompt, /The drums are progressive/);
-  assert.ok(p.prompt.length <= 1500 && p.style.length <= 240 && p.negativeTags.length <= 200);
+  assert.ok(p.prompt.length <= 3000 && p.style.length <= 1000 && p.negativeTags.length <= 200);
+  // Suno reads the style field for instrumentals, so the playing direction is there too
+  assert.match(p.style, /Lead /);
+  assert.match(p.style, /Drums: /);
   assert.equal(p.ornamentAmount, 1.6);
   const sent = `${p.prompt} ${p.style} ${p.negativeTags}`.toLowerCase();
   for (const style of styles) for (const name of style.inspiredBy) assert.ok(!sent.includes(name.toLowerCase()), `${name} leaked`);
@@ -151,6 +154,11 @@ test('prompt: several lead styles blend into one lead; limits hold; no names', (
   // a plain request still works
   const plain = buildSunoPrompt({ raga: { name: 'Yaman' }, genre: 'lofi' });
   assert.equal(plain.style, 'lofi');
+  // a structure is described section by section, in the prompt and in the style field
+  const withPlan = buildSunoPrompt({ raga: { name: 'Yaman' }, genre: 'jazz', structure: normalizeStructure('jazz_ballad') });
+  assert.match(withPlan.style, /Structure, in order: /);
+  assert.match(withPlan.prompt, /Structure, in order: /);
+  assert.ok(withPlan.style.length <= 1000);
 });
 
 test('research: picks the artist page and the parts about the playing', async () => {
@@ -169,4 +177,76 @@ test('research: picks the artist page and the parts about the playing', async ()
   assert.match(r.about_the_playing[0].text, /wide vibrato/);
   const none = await researchArtist('Nobody', { fetchImpl: async () => ({ ok: true, json: async () => ({ query: { search: [] } }) }) });
   assert.equal(none.found, false);
+});
+
+const SOOTHING_JAZZ = {
+  name: 'Soothing jazz',
+  tempo: 68,
+  sections: [
+    { name: 'Rubato intro', share: 1, pulse: 'free', pace: 'slow', register: 'low', material: 'explore', ornament: 1.2, energy: 0.2 },
+    { name: 'Head', share: 2, pulse: 'steady', pace: 'slow', register: 'middle', material: 'theme', theme: 'A', energy: 0.4 },
+    { name: 'Solo', share: 2, pulse: 'steady', pace: 'medium', register: 'wide', material: 'variation', theme: 'A', energy: 0.6 },
+    { name: 'Head out', share: 2, pulse: 'steady', pace: 'slow', register: 'middle', material: 'theme_return', theme: 'A', energy: 0.4 },
+    { name: 'Tag', share: 1, pulse: 'free', pace: 'slow', register: 'low', material: 'ending', energy: 0.2 },
+  ],
+};
+
+for (const [raga, id] of [[YAMAN, 'yaman'], [MALKAUNS, 'malkauns'], [BHAIRAV, 'bhairav']]) {
+  test(`${raga.name}: a structure shapes the piece but never takes it out of the raga`, () => {
+    const g = buildGrammar(withPhrases(raga, id));
+    const plans = [...Object.keys(STARTER_STRUCTURES).filter((k) => !STARTER_STRUCTURES[k].classical), SOOTHING_JAZZ];
+    for (const plan of plans) {
+      const structure = normalizeStructure(plan, { duration: 120 });
+      for (let seed = 1; seed <= 12; seed++) {
+        const m = generateMelody(g, { seed, duration: structure.duration, structure });
+        addOrnaments(m.events, g, { seed });
+        const report = validateMelody(m.events, g);
+        assert.ok(report.valid, `${structure.name} seed ${seed}: ${report.violations[0]?.message}`);
+        for (const e of m.events) {
+          assert.ok(g.pcs.has(pc(e.pitch)), `${structure.name} seed ${seed}: note outside the raga`);
+          const touches = e.orn ? [e.orn.from, e.orn.grace, e.orn.neighbor, ...(e.orn.pitches || [])].filter((v) => v !== undefined) : [];
+          for (const t of touches) assert.ok(g.pcs.has(pc(t)), `${structure.name} seed ${seed}: ornament left the raga`);
+        }
+        assert.equal(pc(m.events[m.events.length - 1].pitch), 0, 'ends on Sa');
+        // every section is played, in the order asked for
+        assert.deepEqual(m.parts.map((p) => p.name), structure.sections.map((s) => s.name));
+      }
+    }
+  });
+}
+
+test('structure: the theme comes back, and the rendered audio still passes the raga check', () => {
+  const r = composeReference(YAMAN, { id: 'yaman', seed: 5, tonic: 'D', duration: 90, structure: SOOTHING_JAZZ });
+  assert.equal(r.check.valid, true);
+  const line = (part) => r.events.filter((e) => e.part === part && e.theme === 'A' && !e.varied).map((e) => pc(e.pitch)).join(',');
+  assert.ok(line('Head').length > 0);
+  assert.ok(line('Head out').includes(line('Head').split(',').slice(0, 4).join(',')), 'the head returns');
+  const { pcm, sampleRate } = decodeWav(r.wav);
+  const audio = certifyAudio(pcm, sampleRate, { ragaNotes: r.grammar.pcs, tonicMidi: r.tonicMidi });
+  assert.equal(audio.verdict, 'pass', `off-raga share ${audio.offRagaShare}`);
+});
+
+test('structure: a plan is checked before it is used', () => {
+  assert.throws(() => normalizeStructure({ sections: [{ name: 'Solo', material: 'variation', theme: 'A' }] }), /theme/i);
+  assert.throws(() => normalizeStructure({ sections: [{ name: 'X', pace: 'blazing' }] }));
+  assert.throws(() => normalizeStructure('no such starter'));
+  const s = normalizeStructure(SOOTHING_JAZZ, { duration: 160 });
+  assert.equal(Math.round(s.sections.reduce((t, x) => t + x.seconds, 0)), 160);
+});
+
+test('research: a kind of music is looked up, dropping mood words that mislead the search', async () => {
+  const article = 'Jazz is a music genre.\n\n== Elements ==\nJazz ballads are slow, with a head, improvised solos over the same chord changes, and a return of the head.\n\n== History ==\nLong ago.';
+  const asked = [];
+  const fetchImpl = async (url) => {
+    const u = decodeURIComponent(String(url));
+    if (u.includes('list=search')) {
+      asked.push(u);
+      return { ok: true, json: async () => ({ query: { search: /soothing/i.test(u) ? [{ title: 'Relaxation (psychology)' }] : [{ title: 'Jazz' }] } }) };
+    }
+    return { ok: true, json: async () => ({ query: { pages: { 1: { extract: article } } } }) };
+  };
+  const r = await researchMusic('soothing jazz', { fetchImpl });
+  assert.equal(r.found, true);
+  assert.equal(r.page, 'Jazz');
+  assert.ok(asked.length >= 2);
 });

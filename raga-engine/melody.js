@@ -67,13 +67,14 @@ export function generateMelody(grammar, options = {}) {
   };
 
   /** Append one phrase. `durs` gives each note's length, `rest` the breath after it. */
-  const emit = (pitches, durs, rest, section, vel = 0.7) => {
+  const emit = (pitches, durs, rest, section, vel = 0.7, extra = null) => {
     pitches.forEach((p, i) => {
       const end = i === pitches.length - 1;
       events.push({
         pitch: p, start: t, dur: durs[i], section, phrase: phraseId,
         vel: Math.min(1, vel * (isNyas(p) ? 1.08 : 0.96) * between(0.94, 1.06)),
         phraseEnd: end, nyas: isNyas(p),
+        ...extra,
       });
       t += durs[i];
     });
@@ -163,6 +164,212 @@ export function generateMelody(grammar, options = {}) {
     const tail = g.path(head[head.length - 1], pick(ends), { lo: lo - 2, hi: hi + 2, rand });
     return tail ? [...head, ...tail.slice(1)] : null;
   };
+
+  // ---------- A GIVEN STRUCTURE ----------
+  // When a structure is passed in, the piece follows its sections in order
+  // instead of the classical alap-jor-taan plan below. A structure changes
+  // the shape of the piece only: every phrase here is still built from the
+  // same raga-bound shapes (arc, zigzag, sequence, fragment, the raga's own
+  // phrases), so no note or move outside the raga can appear.
+  if (options.structure && !options.structure.classical) {
+    const S = options.structure;
+    const bpm = S.tempo;
+    const beat = 60 / bpm;
+    const bar = beat * S.beatsPerBar;
+    const WINDOWS = { low: [-5, 5], middle: [-1, 9], high: [5, 16], wide: [-3, 14] };
+    const PACE = {
+      slow: { beats: [1, 1, 2, 1.5, 1], last: [3, 4], free: 1.15 },
+      medium: { beats: [0.5, 0.5, 1, 1, 1.5], last: [2, 3], free: 0.85 },
+      fast: { beats: [0.25, 0.25, 0.5, 0.5, 0.25], last: [1, 2], free: 0.6 },
+    };
+    // How a section feels to the ornament and audio stages
+    const feel = (sec) => (sec.pulse === 'free' ? 'alap' : sec.pace === 'fast' ? 'taan' : 'jor');
+
+    const rhythm = (n, sec) => {
+      const P = PACE[sec.pace];
+      if (sec.pulse === 'free') {
+        return Array.from({ length: n }, (_, i) =>
+          (i === n - 1 ? between(1.9, 3.1) : i === 0 ? between(0.8, 1.2) : between(0.45, 0.85)) * P.free);
+      }
+      return Array.from({ length: n }, (_, i) => (i === n - 1 ? pick(P.last) : pick(P.beats)) * beat);
+    };
+    // On a beat, the breath after a phrase is whatever brings the next phrase to a bar line
+    const breath = (durs, sec) => {
+      if (sec.pulse === 'free') return between(0.5, 0.95) * PACE[sec.pace].free;
+      const total = durs.reduce((a, b) => a + b, 0);
+      const unit = sec.pace === 'fast' ? bar / 2 : bar;
+      const least = Math.max(0.34, beat * (sec.pace === 'fast' ? 0.5 : 1));
+      return Math.ceil((total + least) / unit - 1e-9) * unit - total;
+    };
+    const play = (line, sec, extra = {}, durs = rhythm(line.length, sec)) => {
+      emit(line, durs, breath(durs, sec), feel(sec), 0.55 + 0.35 * sec.energy,
+        { part: sec.name, ornAmount: sec.ornament, ...extra });
+    };
+
+    const restsIn = ([lo, hi]) => g.pitches(lo, hi).filter(isNyas);
+    const startIn = (win) => {
+      if (last >= win[0] && last <= win[1]) return last;
+      const rests = restsIn(win);
+      return rests.length ? pick(rests) : 0;
+    };
+
+    // New material: a different phrase shape each time
+    const SHAPES = ['arc', 'bank', 'zigzag', 'fragment'];
+    let prevShape = null;
+    const explore = (sec, win) => {
+      const [lo, hi] = win;
+      const rests = restsIn(win);
+      if (!rests.length) return null;
+      const start = startIn(win);
+      const shape = pick(SHAPES.filter((x) => x !== prevShape));
+      prevShape = shape;
+      if (shape === 'bank') {
+        const ph = bankPhrase(hi + 2, lo - 2, 2);
+        if (ph) return ph;
+      }
+      return fresh(() => (shape === 'zigzag' ? zigzag(start, rand() < 0.5 ? 1 : -1, lo, hi, 2 + Math.floor(rand() * 2))
+        : shape === 'fragment' ? fragment(lo, hi)
+        : arc(start, pick(g.pitches(lo, hi)), pick(rests), lo - 1, hi + 1)),
+      { minLen: 3, maxLen: sec.pace === 'slow' ? 8 : 12 });
+    };
+
+    // Fast lines
+    const run = (win) => {
+      const [lo, hi] = win;
+      const kind = pick(['zigzagUp', 'zigzagDown', 'sequenceUp', 'sequenceDown', 'sweep']);
+      return fresh(() => {
+        if (kind === 'zigzagUp') return zigzag(pick(g.pitches(lo, lo + 4)), 1, lo, hi, 4);
+        if (kind === 'zigzagDown') return zigzag(pick(g.pitches(hi - 4, hi)), -1, lo, hi, 4);
+        if (kind === 'sweep') {
+          const low = pick(g.pitches(lo, lo + 3)), top = pick(g.pitches(hi - 3, hi));
+          const up = g.path(low, top, { lo: lo - 1, hi: hi + 1, rand });
+          const down = g.path(top, low, { lo: lo - 1, hi: hi + 1, rand });
+          return up && down ? settle([...up, ...down.slice(1)], lo, hi) : null;
+        }
+        const a = pick(g.pitches(lo, lo + 5));
+        const tops = g.pitches(a + 6, Math.min(hi, a + 10));
+        return tops.length ? sequence(a, pick(tops), kind === 'sequenceUp' ? 1 : -1) : null;
+      }, { min: 0.4, minLen: 5, maxLen: 24, tries: 10 });
+    };
+
+    // A theme is a question and an answer, with a fixed rhythm so that it is
+    // recognisable when it comes back. The raga's own signature phrase is
+    // used as the question when one fits.
+    const themes = new Map();
+    const buildTheme = (sec, win) => {
+      const [lo, hi] = win;
+      const rests = restsIn(win);
+      if (!rests.length) return null;
+      const open = rests.filter((p) => pc(p) !== 0);
+      const homes = g.pitches(lo, hi).filter((p) => pc(p) === 0);
+      let question = null;
+      if (rand() < 0.6) {
+        const fits = g.bank.filter((ph) => ph.length >= 4 && ph.length <= 8 && Math.max(...ph) <= hi + 2 && Math.min(...ph) >= lo - 2);
+        if (fits.length) question = pick(fits);
+      }
+      if (!question) {
+        question = fresh(() => arc(pick(rests), pick(g.pitches(lo, hi)), pick(open.length ? open : rests), lo - 1, hi + 1),
+          { minLen: 4, maxLen: 8, min: 0.3 });
+      }
+      if (!question) return null;
+      const home = homes.length ? pick(homes) : pick(rests);
+      const answer = fresh(() => arc(question[question.length - 1], pick(g.pitches(lo, hi)), home, lo - 1, hi + 1),
+        { minLen: 3, maxLen: 8, min: 0.3 });
+      if (!answer) return null;
+      return [question, answer].map((line) => ({ line, durs: rhythm(line.length, sec) }));
+    };
+    // The theme an octave away when a section asks for a different register and it fits
+    const shiftFor = (theme, sec) => {
+      const all = theme.flatMap((ph) => ph.line);
+      if (sec.register === 'high' && Math.max(...all) + 12 <= 19 && Math.min(...all) + 12 >= 4) return 12;
+      if (sec.register === 'low' && Math.min(...all) - 12 >= -8) return -12;
+      return 0;
+    };
+    const state = (label, sec) => {
+      const theme = themes.get(label);
+      const shift = shiftFor(theme, sec);
+      for (const ph of theme) play(ph.line.map((p) => p + shift), sec, { theme: label }, ph.durs);
+    };
+    // A variation keeps the opening of a theme phrase and finds a new way home
+    const vary = (label, sec, win) => {
+      const [lo, hi] = win;
+      const theme = themes.get(label);
+      const rests = restsIn(win);
+      if (!theme || !rests.length) return null;
+      const ph = pick(theme);
+      const keep = Math.max(2, Math.ceil(ph.line.length / 2));
+      const head = ph.line.slice(0, keep);
+      const line = fresh(() => {
+        const tail = arc(head[head.length - 1], pick(g.pitches(lo, hi)), pick(rests), lo - 1, hi + 1);
+        return tail ? [...head, ...tail.slice(1)] : null;
+      }, { min: 0.15, minLen: 3, maxLen: 12 });
+      if (!line) return null;
+      const durs = [...ph.durs.slice(0, keep - 1), ...rhythm(line.length - (keep - 1), sec)];
+      return { line, durs };
+    };
+
+    // Coming home: down to Sa, the last note held
+    const ending = (sec) => {
+      const lo = Math.min(-1, last - 1), hi = Math.max(last, 12) + 1;
+      const down = g.path(last, 0, { lo, hi, rand }) || g.path(pick(g.pitches(0, 7).filter(isNyas)) ?? 0, 0, { lo: -1, hi: 13, rand });
+      if (sec.tihai) {
+        const figure = g.bank.find((ph) => ph[ph.length - 1] === 0 && ph.length >= 3 && ph.length <= 5)
+          || (down && down.length >= 3 ? down.slice(-4) : [0]);
+        for (let k = 0; k < 3; k++) {
+          const durs = figure.map((_, i) => (i === figure.length - 1 ? (k === 2 ? 3.2 : beat) : beat * 0.5));
+          emit(figure, durs, k === 2 ? 0.4 : Math.max(0.34, beat * 0.5), 'taan', 0.55 + 0.35 * sec.energy, { part: sec.name, ornAmount: sec.ornament });
+        }
+        return;
+      }
+      const line = down && down.length > 1 ? down.slice(-8) : [0];
+      const durs = rhythm(line.length, sec);
+      durs[durs.length - 1] = between(3, 4);
+      emit(line, durs, 0.4, feel(sec), 0.55 + 0.35 * sec.energy, { part: sec.name, ornAmount: sec.ornament });
+    };
+
+    for (const sec of S.sections) {
+      const win = WINDOWS[sec.register];
+      const endT = t + sec.seconds;
+      const margin = sec.pulse === 'free' ? 1.5 : beat;
+      let statements = 0;
+      let guard = 0;
+      while (sec.material !== 'ending' && t < endT - margin && guard++ < 120) {
+        if (sec.material === 'theme' || sec.material === 'theme_return') {
+          if (!themes.has(sec.theme)) {
+            const theme = buildTheme(sec, win);
+            if (theme) themes.set(sec.theme, theme);
+          }
+          if (themes.has(sec.theme)) {
+            if (statements < 2) { state(sec.theme, sec); statements++; continue; }
+            const v = vary(sec.theme, sec, win);
+            if (v) { play(v.line, sec, { theme: sec.theme, varied: true }, v.durs); continue; }
+          }
+        } else if (sec.material === 'variation') {
+          const v = vary(sec.theme, sec, win);
+          if (v) { play(v.line, sec, { theme: sec.theme, varied: true }, v.durs); continue; }
+        } else if (sec.material === 'runs') {
+          const line = run(win);
+          if (line) { play(line, { ...sec, pulse: 'steady', pace: 'fast' }); continue; }
+        }
+        const line = explore(sec, win);
+        if (line) play(line, sec);
+      }
+      if (sec.material === 'ending') ending(sec);
+    }
+    // Whatever the structure says, the piece ends at home
+    if (pc(last) !== 0) ending({ ...S.sections[S.sections.length - 1], tihai: false });
+
+    const parts = [];
+    for (const e of events) {
+      const part = parts[parts.length - 1];
+      if (part && part.name === e.part) part.end = e.start + e.dur;
+      else parts.push({ name: e.part, start: e.start, end: e.start + e.dur });
+    }
+    return {
+      events, bpm, seed, duration: t,
+      parts: parts.map((p) => ({ name: p.name, start: +p.start.toFixed(1), end: +p.end.toFixed(1) })),
+    };
+  }
 
   // ---------- ALAP ----------
   const alapEnd = duration * sections.alap;

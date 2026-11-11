@@ -8,6 +8,7 @@ export * from './phrases.js';
 export * from './styles.js';
 export * from './prompt.js';
 export * from './research.js';
+export * from './structure.js';
 
 import { buildGrammar } from './grammar.js';
 import { generateMelody } from './melody.js';
@@ -15,6 +16,7 @@ import { addOrnaments, ornamentCounts } from './ornaments.js';
 import { validateMelody } from './validate.js';
 import { renderReference, encodeWav, tonicToMidi } from './synth.js';
 import { withPhrases } from './phrases.js';
+import { normalizeStructure } from './structure.js';
 
 /**
  * One call: raga in, checked melody and reference WAV out.
@@ -23,11 +25,13 @@ import { withPhrases } from './phrases.js';
  */
 export function composeReference(raga, options = {}) {
   const { id, duration = 160, tonic = 'C', seed = Date.now() % 2147483647, drone = true, render = true, ornamentAmount = 1 } = options;
+  // A structure lays the piece out in sections; without one it is alap, jor, taan
+  const structure = options.structure ? normalizeStructure(options.structure, { duration }) : null;
   const grammar = buildGrammar(withPhrases(raga, id));
   let lastReport;
   for (let attempt = 0; attempt < 6; attempt++) {
     const s = seed + attempt * 101;
-    const melody = generateMelody(grammar, { duration, seed: s });
+    const melody = generateMelody(grammar, { duration: structure?.duration ?? duration, seed: s, structure });
     addOrnaments(melody.events, grammar, { seed: s, amount: ornamentAmount });
     lastReport = validateMelody(melody.events, grammar);
     if (!lastReport.valid) continue;
@@ -35,6 +39,7 @@ export function composeReference(raga, options = {}) {
     return {
       grammar, events: melody.events, bpm: melody.bpm, seed: s, tonic, tonicMidi: tonicToMidi(tonic),
       duration: melody.duration, ornaments: ornamentCounts(melody.events), check: lastReport,
+      structure, parts: melody.parts || null,
       wav: audio ? encodeWav(audio.pcm, audio.sampleRate) : null,
     };
   }

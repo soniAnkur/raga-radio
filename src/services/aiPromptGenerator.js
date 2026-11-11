@@ -208,6 +208,16 @@ function applyPlayingStyles(result, instrumentIds) {
     style = next;
   }
 
+  // For an instrumental, Suno treats the prompt field as lyrics, so the style
+  // field is what shapes the music. Add how each instrument is played, in
+  // short form, after the tags (the style field takes up to 1000 characters).
+  for (const instrument of styled) {
+    if (!instrument.styleSummary) continue;
+    const next = `${style}. ${instrument.role === 'melodic' ? 'Lead' : instrument.name}: ${instrument.styleSummary}`;
+    if (next.length > 1000) break;
+    style = next;
+  }
+
   const avoid = [
     ...String(result.negativeTags || '').split(',').map(t => t.trim()).filter(Boolean),
     ...styled.flatMap(i => i.avoid || []),

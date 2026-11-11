@@ -6,7 +6,7 @@
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { composeReference, pitchToSwara, BUILT_IN_STYLES } from '../../raga-engine/index.js';
-import { guard, promptFor, ragaShape, styleShape } from '../../raga-engine/tools.js';
+import { guard, promptFor, ragaShape, styleShape, structureArg } from '../../raga-engine/tools.js';
 import { checkApiKey, generateFromUpload, getTaskStatus, downloadTracks } from '../services/sunoApi.js';
 import { uploadBufferToR2, isR2Configured } from '../services/cloudflare-r2.js';
 import { buildMidi } from '../generators/midiBuilder.js';
@@ -18,7 +18,7 @@ const MIN_GUIDE_SECONDS = 150;
 export function registerAppTools(server, ctx) {
   server.registerTool('start_track', {
     description: 'Make a full track in one step: compose a guide melody that follows the raga, write the Suno prompt from the genre, instruments, styles and artists, '
-      + 'and have Suno perform the melody. Spends Suno credits. Returns a task_id at once; the audio takes two to five minutes. '
+      + 'and have Suno perform the melody. Pass a `structure` from plan_structure to lay the piece out for a kind of music. Spends Suno credits. Returns a task_id at once; the audio takes two to five minutes. '
       + 'Check it with suno_status, then call save_track. If an artist has no style yet, nothing is started and the research comes back in needs_style, as in build_prompt.',
     inputSchema: {
       raga: ragaShape.optional(),
@@ -28,6 +28,7 @@ export function registerAppTools(server, ctx) {
       styles: z.array(z.string()).optional().describe('Playing style ids from list_styles'),
       customStyles: z.array(z.object(styleShape)).optional().describe('Playing styles written for this track only'),
       artists: z.array(z.string()).optional().describe('Artists whose playing to draw on'),
+      structure: structureArg.optional(),
       notes: z.string().optional().describe('Extra direction for the prompt. No artist names.'),
       tonic: z.string().optional().describe('Key for Sa, such as "D". Default: picked at random so tracks differ.'),
       duration: z.number().min(60).max(360).optional().describe('Guide melody length in seconds (at least 150 is used)'),
@@ -44,7 +45,8 @@ export function registerAppTools(server, ctx) {
     const styles = [...(args.styles || []), ...instrumentIds.filter((i) => BUILT_IN_STYLES[i])];
     const instruments = instrumentIds.map((i) => getInstrumentById(i)?.name || i);
 
-    const built = await promptFor(ctx, { ...args, raga, genre, instruments, styles });
+    // First pass without the structure: it settles the styles and catches unknown artists before any work is done
+    const built = await promptFor(ctx, { ...args, structure: null, raga, genre, instruments, styles });
     if (built.resolved.unknownArtists.length) {
       const research = ctx.research || (await import('../../raga-engine/research.js')).researchArtist;
       return {
@@ -62,14 +64,20 @@ export function registerAppTools(server, ctx) {
     if (!isR2Configured()) throw new Error('Storage is not configured on this server.');
 
     const tonic = args.tonic || TONICS[Math.floor(Math.random() * TONICS.length)];
+    const duration = Math.max(args.duration || 0, MIN_GUIDE_SECONDS);
     const composed = composeReference(raga, {
       id,
-      duration: Math.max(args.duration || 0, MIN_GUIDE_SECONDS),
+      duration,
       tonic,
       seed: args.seed,
       drone: instrumentIds.includes('tanpura'),
       ornamentAmount: built.ornamentAmount,
+      structure: args.structure,
     });
+    // With a structure, the text for Suno uses the sections' real timings in the guide melody
+    const sent = composed.structure
+      ? await promptFor(ctx, { ...args, raga, genre, instruments, styles, parts: composed.parts, duration })
+      : built;
 
     const base = `melody_${raga.name.toLowerCase().replace(/\s+/g, '_')}_${uuidv4().slice(0, 8)}`;
     const midi = buildMidi(composed.events.map((e) => ({
@@ -83,9 +91,9 @@ export function registerAppTools(server, ctx) {
 
     const genreData = (await ctx.resolveGenre(genre)) || { id: genre, name: genre };
     const taskId = await generateFromUpload(referenceAudio, {
-      prompt: built.prompt,
-      style: built.style,
-      negativeTags: built.negativeTags,
+      prompt: sent.prompt,
+      style: sent.style,
+      negativeTags: sent.negativeTags,
       title: `Raga ${raga.name} | ${genreData.name} | ${raga.mood?.[0] || 'Raga'}`.slice(0, 80),
       audioWeight: args.audioWeight ?? 0.7,
       styleWeight: args.styleWeight ?? 0.65,
@@ -103,7 +111,8 @@ export function registerAppTools(server, ctx) {
       guide_melody: { seconds: Math.round(composed.duration), notes: composed.events.length, ornaments: composed.ornaments, valid: composed.check.valid },
       reference_audio: referenceAudio,
       midi_file: midiFile,
-      sent_to_suno: { style: built.style, negativeTags: built.negativeTags, prompt: built.prompt },
+      structure: composed.structure ? { name: composed.structure.name, tempo: composed.structure.tempo, sections: composed.parts } : 'alap, jor, taan',
+      sent_to_suno: { style: sent.style, negativeTags: sent.negativeTags, prompt: sent.prompt },
       used_styles: built.resolved.styles.map((s) => s.id),
       next: 'Call suno_status with task_id until it is complete (two to five minutes), then save_track with the values above.',
     };

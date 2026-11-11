@@ -17,6 +17,7 @@ import {
   buildGrammar, describeGrammar, withPhrases, composeReference, validateMelody, certifyAudio,
   decodeWav, parsePhrase, pitchToSwara, tonicToMidi, PHRASES,
   mergeStyles, resolveStyles, describeStyles, defineStyle, findArtistName, STYLE_ROLES, buildSunoPrompt, researchArtist,
+  researchMusic, normalizeStructure, structureText, describeStarters, findStarter, SECTION_OPTIONS, SECTION_HELP,
 } from './index.js';
 import { createSunoClient, SUNO_OPTIONS } from './suno.js';
 
@@ -88,25 +89,52 @@ export const styleShape = {
   ornamentAmount: z.number().min(0.5).max(2).optional().describe('How ornamented the guide melody should be for this style (1 is normal)'),
 };
 
+/** One section of a song structure, as passed to a tool */
+export const sectionShape = {
+  name: z.string().describe(SECTION_HELP.name),
+  share: z.number().positive().optional().describe(SECTION_HELP.share),
+  pulse: z.enum(SECTION_OPTIONS.pulse).optional().describe(SECTION_HELP.pulse),
+  pace: z.enum(SECTION_OPTIONS.pace).optional().describe(SECTION_HELP.pace),
+  register: z.enum(SECTION_OPTIONS.register).optional().describe(SECTION_HELP.register),
+  material: z.enum(SECTION_OPTIONS.material).optional().describe(SECTION_HELP.material),
+  theme: z.enum(['A', 'B']).optional().describe(SECTION_HELP.theme),
+  ornament: z.number().min(0).max(2).optional().describe(SECTION_HELP.ornament),
+  energy: z.number().min(0).max(1).optional().describe(SECTION_HELP.energy),
+  arrangement: z.string().optional().describe(SECTION_HELP.arrangement),
+  tihai: z.boolean().optional().describe(SECTION_HELP.tihai),
+};
+
+/** A structure argument: a starter id, or the object plan_structure returns */
+export const structureArg = z.union([
+  z.string(),
+  z.object({
+    name: z.string().optional(),
+    tempo: z.number().optional().describe('Beats per minute for sections on a steady pulse (40 to 200)'),
+    beatsPerBar: z.number().optional().describe('Beats in a bar (default 4)'),
+    sections: z.array(z.object(sectionShape)),
+  }).passthrough(),
+]).describe('How the piece is laid out: a starter id (indian_classical, jazz_ballad, lofi_loop, progressive_metal) or the structure object from plan_structure. Leave out for the classical alap, jor, taan.');
+
 /**
  * Build the Suno text for a request, shared by build_prompt and host tools.
  * Styles come from three places: ids of known styles, artists that a known
  * style is modelled on, and customStyles written for this request alone.
  * Unknown artists and styles are reported, not guessed.
  */
-export async function promptFor(ctx, { raga, genre, instruments = [], styles = [], artists = [], customStyles = [], notes = '' }) {
+export async function promptFor(ctx, { raga, genre, instruments = [], styles = [], artists = [], customStyles = [], notes = '', structure = null, parts = null, duration }) {
   const available = await availableStyles(ctx);
   const inline = customStyles.map((style, i) => defineStyle({ name: `Custom style ${i + 1}`, ...style }, available, { allowBuiltInId: true }));
   const pool = mergeStyles([...Object.values(available).filter((s) => s.custom), ...inline]);
   const resolved = resolveStyles({ styles: [...styles, ...inline.map((s) => s.id)], artists }, pool);
   const genreData = (ctx.resolveGenre && genre ? await ctx.resolveGenre(genre) : null) || genre;
-  const built = buildSunoPrompt({ raga, genre: genreData, instruments, styles: resolved.styles, notes });
+  const plan = structure ? normalizeStructure(structure, { duration }) : null;
+  const built = buildSunoPrompt({ raga, genre: genreData, instruments, styles: resolved.styles, notes, structure: plan, parts });
 
   // Last line of defence: no artist name may reach Suno, whichever way it got in
   const names = [...artists, ...resolved.styles.flatMap((s) => s.inspiredBy || [])];
   const leaked = findArtistName(`${built.prompt} ${built.style}`, names);
-  if (leaked) throw new Error(`The prompt would contain the artist name "${leaked}", which Suno rejects. Remove it from notes or the style text.`);
-  return { ...built, resolved };
+  if (leaked) throw new Error(`The prompt would contain the artist name "${leaked}", which Suno rejects. Remove it from notes, the style text or a section's arrangement.`);
+  return { ...built, resolved, structure: plan };
 }
 
 export function registerEngineTools(server, ctx) {
@@ -140,7 +168,8 @@ export function registerEngineTools(server, ctx) {
   }, guard(async (args) => describeGrammar((await grammarFor(args)).grammar)));
 
   server.registerTool('compose_melody', {
-    description: 'Compose a rule-checked raga melody (alap, jor, taan) with ornaments that stay inside the raga.'
+    description: 'Compose a rule-checked raga melody with ornaments that stay inside the raga. Without a structure it is the classical alap, jor, taan; '
+      + 'with one (see plan_structure) it follows those sections. Either way every note and every move is checked against the raga.'
       + (ctx.remote ? '' : ' Optionally writes a reference WAV with a tanpura-style drone.'),
     inputSchema: {
       ...ragaArgs,
@@ -148,6 +177,7 @@ export function registerEngineTools(server, ctx) {
       tonic: z.string().optional().describe('Western note for Sa, e.g. "C#", "D" (default C)'),
       seed: z.number().int().optional().describe('Same seed gives the same melody'),
       ornamentAmount: z.number().min(0.5).max(2).optional().describe('How ornamented the melody is. 1 is normal; build_prompt suggests a value for the chosen styles.'),
+      structure: structureArg.optional(),
       includeNotes: z.boolean().optional().describe('Return every note with timing (default false: phrases only)'),
       ...(ctx.remote ? {} : {
         drone: z.boolean().optional().describe('Include the drone in the WAV (default true)'),
@@ -159,18 +189,22 @@ export function registerEngineTools(server, ctx) {
     const wavPath = ctx.remote ? null : args.outputWav;
     const r = composeReference(raga, {
       id, duration: args.duration, tonic: args.tonic, seed: args.seed, drone: args.drone,
-      ornamentAmount: args.ornamentAmount, render: !!wavPath,
+      ornamentAmount: args.ornamentAmount, structure: args.structure, render: !!wavPath,
     });
     if (wavPath) await writeFile(wavPath, r.wav);
     const phrases = [];
-    for (const e of r.events) (phrases[e.phrase] ||= { section: e.section, notes: [] }).notes.push(pitchToSwara(e.pitch));
+    for (const e of r.events) {
+      const label = e.part ? `${e.part}${e.theme ? ` (theme ${e.theme}${e.varied ? ', varied' : ''})` : ''}` : e.section;
+      (phrases[e.phrase] ||= { section: label, notes: [] }).notes.push(pitchToSwara(e.pitch));
+    }
     return {
       raga: raga.name, tonic: r.tonic, seed: r.seed, bpm: r.bpm, seconds: +r.duration.toFixed(1),
       valid: r.check.valid, ornaments: r.ornaments, wav: wavPath || null,
+      structure: r.structure ? { name: r.structure.name, tempo: r.structure.tempo, sections: r.parts } : 'alap, jor, taan',
       phrases: phrases.filter(Boolean).map((p) => `${p.section}: ${p.notes.join(' ')}`),
       notes: args.includeNotes ? r.events.map((e) => ({
         swara: pitchToSwara(e.pitch), midi: r.tonicMidi + e.pitch, start: +e.start.toFixed(3), dur: +e.dur.toFixed(3),
-        section: e.section, ornament: e.orn?.type || null,
+        section: e.part || e.section, ornament: e.orn?.type || null,
       })) : undefined,
     };
   }));
@@ -234,6 +268,56 @@ export function registerEngineTools(server, ctx) {
     return { saved: style, use: `build_prompt with styles: ["${style.id}"]` + (style.inspiredBy.length ? ` or artists: ["${style.inspiredBy[0]}"]` : '') };
   }));
 
+  server.registerTool('research_music', {
+    description: 'Look a kind of music up on the web and return what is written about how it is put together: form, sections, tempo, rhythm and instrumentation. '
+      + 'Use it before plan_structure when asked for a kind of music with no starter structure, such as "soothing jazz" or "trap". '
+      + 'Mood words are dropped if they mislead the search. For a specific form, ask for it by name ("thirty-two-bar form", "twelve-bar blues").',
+    inputSchema: {
+      kind: z.string().describe('A genre, style or form, such as "jazz ballad" or "lo-fi hip hop"'),
+      hint: z.string().optional().describe('Extra search words (default "music"), such as "song form"'),
+    },
+  }, guard(async ({ kind, hint }) => (ctx.researchMusic || researchMusic)(kind, hint ? { hint } : {})));
+
+  server.registerTool('plan_structure', {
+    description: 'Decide how a piece is laid out before composing it, in two steps. '
+      + 'Step 1: call with `kind` only (for example "soothing jazz"). You get web research on how that kind of music is built, the starter structures and the fields a section can have. '
+      + 'Step 2: write the sections for this piece and call again with `sections`. You get the checked structure back; pass it as `structure` to compose_melody, build_prompt or start_track. '
+      + 'A structure only shapes the piece (what comes first, where the theme returns, how busy each part is). The notes always come from the raga\'s rules.',
+    inputSchema: {
+      kind: z.string().optional().describe('The kind of music, such as "soothing jazz". Also used as the structure\'s name'),
+      sections: z.array(z.object(sectionShape)).optional().describe('The sections in order. Leave out on the first call'),
+      tempo: z.number().min(40).max(200).optional().describe('Beats per minute for sections on a steady pulse (default 90)'),
+      beatsPerBar: z.number().int().min(2).max(7).optional().describe('Beats in a bar (default 4)'),
+      duration: z.number().min(30).max(360).optional().describe('Planned length in seconds (default 160)'),
+      research: z.boolean().optional().describe('Include web research on the first call (default true)'),
+    },
+  }, guard(async ({ kind, sections, tempo, beatsPerBar, duration, research }) => {
+    if (sections && sections.length) {
+      const structure = normalizeStructure({ name: kind, tempo, beatsPerBar, sections }, { duration });
+      return {
+        structure,
+        as_text_for_suno: structureText(structure),
+        next: 'Pass `structure` to compose_melody (to hear the plan as notes), build_prompt, or start_track.',
+      };
+    }
+    if (!kind) throw new Error('Give `kind` (what sort of music) to get research and starters, or `sections` to check a structure.');
+    const starter = findStarter(kind);
+    let found = null;
+    if (research !== false) {
+      try { found = await (ctx.researchMusic || researchMusic)(kind); } catch (e) { found = { found: false, note: `Lookup failed: ${e.message}` }; }
+    }
+    return {
+      needs_sections: true,
+      kind,
+      ...(starter ? { matching_starter: normalizeStructure(starter, { duration }) } : {}),
+      research: found,
+      starters: describeStarters(),
+      section_fields: SECTION_HELP,
+      todo: 'Write 3 to 8 sections for this piece from the research and what you know of the form, then call plan_structure again with `kind`, `sections` and a `tempo`. '
+        + 'State a theme before any variation or theme_return. Keep artist names out of `arrangement`.',
+    };
+  }));
+
   server.registerTool('build_prompt', {
     description: 'Write the Suno prompt for a raga track: the prompt text, the style tags and the negative tags. '
       + 'Say how it should be played in any of three ways: styles (ids from list_styles), customStyles (written for this request, nothing saved), '
@@ -248,12 +332,14 @@ export function registerEngineTools(server, ctx) {
       styles: z.array(z.string()).optional().describe('Playing style ids from list_styles'),
       customStyles: z.array(z.object(styleShape)).optional().describe('Playing styles written for this request only'),
       artists: z.array(z.string()).optional().describe('Artists whose playing to draw on, such as ["Polyphia", "Opeth"]'),
+      structure: structureArg.optional(),
+      duration: z.number().min(30).max(360).optional().describe('Length in seconds the structure is planned for (default 160)'),
       notes: z.string().optional().describe('Any extra direction, added to the prompt as written. No artist names.'),
       research: z.boolean().optional().describe('Look up artists that have no style yet (default true)'),
     },
   }, guard(async (args) => {
     const { raga } = await ctx.resolveRaga(args);
-    const { prompt, style, negativeTags, ornamentAmount, resolved } = await promptFor(ctx, { ...args, raga });
+    const { prompt, style, negativeTags, ornamentAmount, resolved, structure } = await promptFor(ctx, { ...args, raga });
     const needs_style = await Promise.all(resolved.unknownArtists.map(async (artist) => {
       let research = null;
       if (args.research !== false) {
@@ -270,6 +356,7 @@ export function registerEngineTools(server, ctx) {
       used_styles: resolved.styles.map((s) => ({ id: s.id, role: s.role, inspiredBy: s.inspiredBy || [] })),
       needs_style,
       unknown_styles: resolved.unknownStyles,
+      structure: structure ? structure.name : 'none given (classical alap, jor, taan)',
     };
   }));
 

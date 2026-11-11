@@ -40,7 +40,9 @@ text.prompt; text.style; text.negativeTags;
 | `validate_melody` | Check a note sequence against a raga | No |
 | `certify_audio` | Wrong-note share of a WAV or MP3 (link, or local path on the local server) | No |
 | `research_artist` | What is written about how an artist plays | No |
-| `build_prompt` | The Suno prompt from raga, genre, instruments, styles and artists | No |
+| `research_music` | What is written about how a kind of music is put together (form, sections, tempo) | No |
+| `plan_structure` | The layout of a piece: sections, pulse, pace, where the theme returns | No |
+| `build_prompt` | The Suno prompt from raga, genre, instruments, styles, artists and structure | No |
 | `list_styles` | Starter styles plus saved ones | No |
 | `define_style` | Save a style for reuse | No |
 | `suno_cover`, `suno_add_instrumental`, `suno_generate` | Suno calls with every option; `dryRun: true` is free | Yes, unless `dryRun` |
@@ -56,6 +58,20 @@ Suno rejects prompts that name artists, so names never go into the prompt. The f
 4. To reuse it later by name, save it with `define_style`.
 
 No artist list is built in beyond the `inspiredBy` of the starter styles; `research_artist` works for anyone with a Wikipedia page.
+
+### Structure for a kind of music
+
+Without a structure a piece is the classical alap, jor, taan. For anything else ("soothing jazz", "lo-fi", "progressive metal") the layout is decided first, in steps:
+
+1. `plan_structure` with `kind: "soothing jazz"`. It returns web research on how that music is built (`research_music` does the same on its own), the starter structures (`indian_classical`, `jazz_ballad`, `lofi_loop`, `progressive_metal`) and the fields a section can have.
+2. Write the sections for this piece (for a jazz ballad: free intro, head, solo on the head, head out, tag) and call `plan_structure` again with `sections` and a `tempo`. It returns the checked structure.
+3. Pass that `structure` to `compose_melody`, `build_prompt` or the host's `start_track`. A starter id works in place of the object.
+
+Each section sets: `pulse` (free or steady), `pace`, `register`, `material` (explore, theme, variation, theme_return, runs, ending), which `theme` it uses, how ornamented and how loud it is, and an `arrangement` line for Suno.
+
+**A structure never changes the notes.** It decides what comes when: where a theme is stated, varied and brought back, how busy a section is, where the piece rests. Every phrase is still built from the raga's own moves, each ornament stays on raga notes, the finished melody goes through the same checker as a classical one (an invalid melody is thrown away and recomposed), and it always ends on Sa. The tests compose every starter and a custom plan across three ragas and check every note, every move and every ornament.
+
+The structure reaches Suno twice: as the guide melody it follows, and as text ("Structure, in order: Intro (0:00-0:20): ...") with the real timings from that melody. For instrumentals Suno reads the `style` field rather than the prompt, so the playing direction and the structure line are placed there as well, within its 1000 characters.
 
 ## Run it
 
@@ -122,4 +138,6 @@ node --test raga-engine/engine.test.mjs
 
 - The audio checker follows the strongest pitch per moment. It is reliable on a clear lead line and rougher on dense mixes.
 - The `jobs` request style in `suno.js` follows kie.ai's current documentation; its status response has not been exercised against the live API.
-- `research_artist` reads Wikipedia only. An article that says little about technique gives thin material; add to it before writing a style.
+- `research_music` and `research_artist` read Wikipedia only. For a kind of music the article is often about its history more than its form; use it together with what you know of the form.
+- A structure shapes the guide melody exactly, but Suno treats the section text as direction, not a contract. Section lengths in the final track can differ.
+- `research_artist` details: An article that says little about technique gives thin material; add to it before writing a style.

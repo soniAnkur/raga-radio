@@ -13,6 +13,7 @@ function styled(id, fields) {
     ...fields,
     sunoDesc: style.sound,
     playingStyle: style.description,
+    styleSummary: style.summary,
     styleTags: style.tags,
     avoid: style.avoid,
     ...(style.ornamentAmount ? { ornamentAmount: style.ornamentAmount } : {}),

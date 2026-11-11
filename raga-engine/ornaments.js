@@ -19,7 +19,9 @@ export function addOrnaments(events, grammar, { seed = 1, amount = 1 } = {}) {
   const rand = makeRng(seed * 7919 + 13);
   const between = (lo, hi) => lo + rand() * (hi - lo);
   const g = grammar;
-  const chance = (p) => rand() < p * amount;
+  // A section of a structured piece can ask for more or less ornament than the rest
+  let local = 1;
+  const chance = (p) => rand() < p * amount * local;
 
   const neighbour = (p, preferUpper) => {
     const c = g.neighbors(p, p - 4, p + 4).filter((y) => y !== p && g.isAllowed(y, p));
@@ -36,6 +38,7 @@ export function addOrnaments(events, grammar, { seed = 1, amount = 1 } = {}) {
     const iv = joined ? e.pitch - prev.pitch : 0;
     const size = Math.abs(iv);
     delete e.orn; delete e.sway; e.legato = false;
+    local = e.ornAmount ?? 1;
 
     if (e.section === 'alap') {
       if (joined && size >= 2 && size <= 7 && chance(iv < 0 || e.nyas ? 0.62 : 0.42)) {
