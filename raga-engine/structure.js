@@ -182,16 +182,18 @@ const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.round(seco
 /**
  * The structure as one line for Suno. Pass the parts a composed melody
  * reports to use its real timings; otherwise the planned ones are used.
+ * `detail` shortens it: 'full' has timings, 'short' drops them, 'names' lists
+ * the sections only.
  */
-export function structureText(structure, parts = null) {
+export function structureText(structure, parts = null, detail = 'full') {
   const rows = (parts && parts.length ? parts : structure.sections).map((s) => {
     const section = structure.sections.find((x) => x.name === s.name) || s;
     const what = section.arrangement || `${section.pace} ${section.pulse === 'free' ? 'free-time' : 'steady'} ${section.material.replace('_', ' ')}`;
-    const from = clock(s.start);
-    const to = clock(s.end ?? s.start + s.seconds);
-    return `${s.name} (${from}-${to}): ${what}`;
+    if (detail === 'names') return s.name;
+    if (detail === 'short') return `${s.name}: ${what}`;
+    return `${s.name} (${clock(s.start)}-${clock(s.end ?? s.start + s.seconds)}): ${what}`;
   });
-  return `Structure, in order: ${rows.join('; ')}.`;
+  return detail === 'names' ? `Structure, in order: ${rows.join(', then ')}.` : `Structure, in order: ${rows.join('; ')}.`;
 }
 
 /** Listing of the starters for tools and docs */

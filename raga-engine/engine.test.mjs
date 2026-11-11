@@ -159,6 +159,12 @@ test('prompt: several lead styles blend into one lead; limits hold; no names', (
   assert.match(withPlan.style, /Structure, in order: /);
   assert.match(withPlan.prompt, /Structure, in order: /);
   assert.ok(withPlan.style.length <= 1000);
+  assert.equal(withPlan.structureInStyle, 'full');
+  // with long playing styles the structure is shortened rather than dropped
+  const crowded = buildSunoPrompt({ raga: { name: 'Adana' }, genre: 'metal', styles, structure: normalizeStructure('progressive_metal') });
+  assert.ok(crowded.style.length <= 1000);
+  assert.notEqual(crowded.structureInStyle, 'none');
+  assert.match(crowded.style, /Structure, in order: /);
 });
 
 test('research: picks the artist page and the parts about the playing', async () => {

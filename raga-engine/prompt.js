@@ -90,16 +90,35 @@ export function buildSunoPrompt({ raga, genre, instruments = [], styles = [], st
   // For an instrumental, Suno treats the prompt field as lyrics, so the style
   // field is what shapes the music. It carries the tags first, then the
   // playing and the structure in short form, as far as they fit.
-  let style = clip([...styles.flatMap((s) => (s.tags || []).slice(0, perStyle)), ...(g.sunoTags || []).slice(0, 6)], LIMITS.tags);
-  for (const line of [...playingSummary(styles), form.replace(/\.$/, '')].filter(Boolean)) {
-    const next = `${style}. ${line}`;
-    if (next.length > LIMITS.style) break;
-    style = next;
+  const tags = clip([...styles.flatMap((s) => (s.tags || []).slice(0, perStyle)), ...(g.sunoTags || []).slice(0, 6)], LIMITS.tags);
+  const playing = playingSummary(styles);
+  const join = (lines) => [tags, ...lines].filter(Boolean).join('. ');
+  let style = join(playing);
+  let structureInStyle = 'none';
+  if (structure) {
+    // The structure is the plan for the piece, so it is always in the style
+    // field: with timings if there is room, shorter if not, and the playing
+    // lines give way last of all.
+    const forms = ['full', 'short', 'names'].map((d) => [d, structureText(structure, parts, d).replace(/\.$/, '')]);
+    let chosen = forms.find(([, line]) => join([...playing, line]).length <= LIMITS.style);
+    const kept = [...playing];
+    if (!chosen) {
+      chosen = forms[2];
+      while (kept.length && join([...kept, chosen[1]]).length > LIMITS.style) kept.pop();
+    }
+    if (join([...kept, chosen[1]]).length <= LIMITS.style) {
+      style = join([...kept, chosen[1]]);
+      structureInStyle = chosen[0];
+    }
+  }
+  if (structureInStyle === 'none') {
+    while (style.length > LIMITS.style && playing.length) { playing.pop(); style = join(playing); }
   }
 
   return {
     prompt,
     style,
+    structureInStyle,
     negativeTags: clip(['vocals', 'singing', 'harsh noise', 'off-key', ...avoid], LIMITS.negativeTags),
     ornamentAmount: Math.max(1, ...styles.map((s) => s.ornamentAmount || 1)),
   };

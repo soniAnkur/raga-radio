@@ -339,7 +339,7 @@ export function registerEngineTools(server, ctx) {
     },
   }, guard(async (args) => {
     const { raga } = await ctx.resolveRaga(args);
-    const { prompt, style, negativeTags, ornamentAmount, resolved, structure } = await promptFor(ctx, { ...args, raga });
+    const { prompt, style, negativeTags, ornamentAmount, resolved, structure, structureInStyle } = await promptFor(ctx, { ...args, raga });
     const needs_style = await Promise.all(resolved.unknownArtists.map(async (artist) => {
       let research = null;
       if (args.research !== false) {
@@ -357,6 +357,7 @@ export function registerEngineTools(server, ctx) {
       needs_style,
       unknown_styles: resolved.unknownStyles,
       structure: structure ? structure.name : 'none given (classical alap, jor, taan)',
+      ...(structure ? { structure_in_style: { full: 'with timings', short: 'without timings, to fit 1000 characters', names: 'section names only, to fit 1000 characters; shorten the styles or the arrangement lines for more', none: 'did not fit' }[structureInStyle] } : {}),
     };
   }));
 
